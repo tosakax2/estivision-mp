@@ -56,6 +56,7 @@ class CameraPreviewWindow(QDialog):
 
         self.progress_bar = QProgressBar()
         self.progress_bar.setRange(0, 20)
+        self.progress_bar.setValue(0)
         self.progress_bar.setFormat("%v / %m 枚")
         self.progress_bar.setFixedWidth(480)
 
