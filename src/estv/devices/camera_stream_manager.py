@@ -1,9 +1,9 @@
 # estv/devices/camera_stream_manager.py
 
+from collections.abc import Callable
 import threading
 import warnings
 
-from collections.abc import Callable
 from PySide6.QtCore import QObject, Signal, QTimer
 
 from estv.devices.camera_stream import CameraStream

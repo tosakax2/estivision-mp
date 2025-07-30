@@ -1,5 +1,7 @@
 # estv/gui/camera_preview_window.py
 
+from collections.abc import Callable
+
 from PySide6.QtWidgets import (
     QDialog,
     QVBoxLayout,
@@ -10,7 +12,6 @@ from PySide6.QtWidgets import (
 )
 from PySide6.QtCore import Qt, QTimer
 from PySide6.QtGui import QPixmap, QImage, QCloseEvent
-from collections.abc import Callable
 
 from estv.devices.camera_stream_manager import CameraStreamManager
 from estv.devices.camera_calibrator import CameraCalibrator
