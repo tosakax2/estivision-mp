@@ -169,9 +169,9 @@ class CameraPreviewWindow(QDialog):
                 else:
                     self.status_label.setText("平均再投影誤差: 計算不可")
 
-                # --- パラメータを保存
-                data_dir = os.path.join(os.path.dirname(__file__), "../../data")
-                data_dir = os.path.abspath(data_dir)
+                # --- プロジェクトルート直下のdata/に保存
+                project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../../"))
+                data_dir = os.path.join(project_root, "data")
                 os.makedirs(data_dir, exist_ok=True)
                 calib_path = os.path.join(data_dir, f"calib_{self.device_id}.npz")
                 self.calibrator.save(calib_path)
