@@ -10,7 +10,7 @@ from estv.gui.main_window import MainWindow
 
 
 def main() -> None:
-    """Entry point for launching the ESTiVision application."""
+    """ESTiVision アプリケーションを起動するエントリーポイント。"""
     # --- QApplicationの初期化
     app: QApplication = QApplication(sys.argv)
 

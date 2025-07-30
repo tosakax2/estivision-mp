@@ -1,5 +1,7 @@
 # estv/devices/camera_calibrator.py
 
+"""カメラキャリブレーションに関連するクラスを提供するモジュール。"""
+
 from pathlib import Path
 
 import cv2
@@ -7,10 +9,10 @@ import numpy as np
 
 
 class CameraCalibrator:
-    """Estimate camera intrinsics from captured chessboard images."""
+    """チェスボード画像からカメラ内部パラメータを推定するクラス。"""
 
     def __init__(self) -> None:
-        """Initialize calibration parameters and storage."""
+        """キャリブレーション用のパラメータと保存領域を初期化する。"""
         self.board_size: tuple[int, int] = (6, 9)   # 内部コーナー数 (横, 縦)
         self.square_size: float = 20.0              # 1マスの一辺（mm）
 
@@ -26,7 +28,7 @@ class CameraCalibrator:
 
 
     def _create_object_points(self) -> np.ndarray:
-        """Create chessboard corner coordinates in world space."""
+        """チェスボードのコーナー座標をワールド座標系で生成する。"""
         objp = np.zeros((self.board_size[1] * self.board_size[0], 3), np.float32)
         objp[:, :2] = np.mgrid[0:self.board_size[0], 0:self.board_size[1]].T.reshape(-1, 2)
         objp *= self.square_size
@@ -34,7 +36,7 @@ class CameraCalibrator:
 
 
     def add_chessboard_image(self, image: np.ndarray) -> bool:
-        """Detect corners from an image and store them for calibration."""
+        """画像からコーナーを検出しキャリブレーション用に保存する。"""
         gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY) if image.ndim == 3 else image
         found, corners = cv2.findChessboardCorners(gray, self.board_size, None)
         if found:
@@ -46,7 +48,7 @@ class CameraCalibrator:
 
 
     def calibrate(self, image_shape: tuple[int, int]) -> float:
-        """Run calibration and compute the RMS reprojection error."""
+        """キャリブレーションを実行し RMS 再投影誤差を計算する。"""
         if len(self.object_points) < 3:
             raise ValueError("最低3枚以上のチェスボード画像が必要です。")
         ret, mtx, dist, rvecs, tvecs = cv2.calibrateCamera(
@@ -61,7 +63,7 @@ class CameraCalibrator:
 
 
     def _calc_reprojection_error(self) -> float | None:
-        """Calculate the overall reprojection error after calibration."""
+        """キャリブレーション後の総再投影誤差を計算する。"""
         if (
             self._rvecs is None
             or self._tvecs is None
@@ -81,31 +83,31 @@ class CameraCalibrator:
 
     @property
     def camera_matrix(self) -> np.ndarray | None:
-        """Calibrated camera matrix if available."""
+        """キャリブレーション済みのカメラ行列。"""
         return self._camera_matrix
 
 
     @property
     def dist_coeffs(self) -> np.ndarray | None:
-        """Calibrated distortion coefficients if available."""
+        """キャリブレーション済みの歪み係数。"""
         return self._dist_coeffs
 
 
     @property
     def reprojection_error(self) -> float | None:
-        """RMS reprojection error from the last calibration."""
+        """直近のキャリブレーションで得られた RMS 再投影誤差。"""
         return self._reproj_error
 
 
     def save(self, filename: str | Path) -> None:
-        """Save calibration parameters to a ``.npz`` file."""
+        """キャリブレーション結果を ``.npz`` ファイルへ保存する。"""
         if self._camera_matrix is None:
             raise ValueError("キャリブレーション未実施です。")
         np.savez(str(filename), camera_matrix=self._camera_matrix, dist_coeffs=self._dist_coeffs)
 
 
     def load(self, filename: str | Path) -> None:
-        """Load calibration parameters from a ``.npz`` file."""
+        """``.npz`` ファイルからキャリブレーションパラメータを読み込む。"""
         data = np.load(str(filename))
         self._camera_matrix = data["camera_matrix"]
         self._dist_coeffs = data["dist_coeffs"]

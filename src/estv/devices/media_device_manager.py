@@ -3,16 +3,18 @@
 from PySide6.QtCore import QObject, QTimer, Signal
 from PySide6.QtMultimedia import QCameraDevice, QMediaDevices
 
+"""利用可能なメディアデバイスの監視を行うモジュール。"""
+
 
 class MediaDeviceManager(QObject):
-    """Monitor available media devices and expose camera information."""
+    """利用可能なメディアデバイスを監視し、カメラ情報を提供するクラス。"""
 
     # --- シグナル
     camera_devices_update_signal = Signal(list)
 
 
     def __init__(self) -> None:
-        """Initialize the manager and fetch initial device list."""
+        """マネージャーを初期化してデバイス一覧を取得する。"""
         super().__init__()
 
         # --- メディアデバイスの情報を取得
@@ -30,7 +32,7 @@ class MediaDeviceManager(QObject):
 
 
     def _on_camera_devices_changed(self) -> None:
-        """React to camera device updates from ``QMediaDevices``."""
+        """``QMediaDevices`` からのカメラデバイス更新に対応する。"""
         # --- 最新のカメラデバイス一覧を再取得
         self._camera_devices: list[QCameraDevice] = self._media_devices.videoInputs()
 
@@ -39,7 +41,7 @@ class MediaDeviceManager(QObject):
 
 
     def _notify_camera_devices_update(self) -> None:
-        """Emit a signal with the current list of camera devices."""
+        """現在のカメラデバイス一覧をシグナルで通知する。"""
         # --- カメラデバイスのIDと名前をまとめたリストを作成
         camera_device_infos: list[dict[str, str]] = [
             {
@@ -55,14 +57,14 @@ class MediaDeviceManager(QObject):
 
     @property
     def camera_id_name_map(self) -> dict[str, str]:
-        """Mapping of camera device IDs to their human readable names."""
+        """カメラデバイスIDから名称へのマッピング。"""
         return {
             bytes(dev.id()).decode("utf-8", errors="ignore"): dev.description()
             for dev in self._camera_devices
         }
 
     def camera_index_by_id(self, camera_id: str) -> int | None:
-        """Return the current index for the camera with ``camera_id``."""
+        """指定IDのカメラの現在のインデックスを返す。"""
         for idx, dev in enumerate(self._camera_devices):
             if bytes(dev.id()).decode("utf-8", errors="ignore") == camera_id:
                 return idx

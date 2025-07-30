@@ -14,10 +14,10 @@ from estv.gui.style_constants import SUCCESS_COLOR, WARNING_COLOR
 
 
 class MainWindow(QMainWindow):
-    """Main application window displaying connected cameras."""
+    """接続されたカメラを一覧表示するメインウィンドウ。"""
 
     def __init__(self) -> None:
-        """Create the main window and set up device managers."""
+        """メインウィンドウを生成しデバイスマネージャーを設定する。"""
         super().__init__()
 
         self._media_device_manager: MediaDeviceManager = MediaDeviceManager()
@@ -37,7 +37,7 @@ class MainWindow(QMainWindow):
 
 
     def _setup_ui(self) -> None:
-        """Configure widgets and layout for the window."""
+        """ウィンドウ内のウィジェットとレイアウトを構成する。"""
         central_widget = QWidget()
         main_layout = QVBoxLayout()
         main_layout.addWidget(QLabel("接続中カメラ一覧:"))
@@ -67,13 +67,13 @@ class MainWindow(QMainWindow):
 
 
     def _on_camera_devices_update(self, camera_device_infos: list[dict[str, str]]) -> None:
-        """Handle updates to the list of available camera devices."""
+        """利用可能なカメラデバイス一覧の更新を処理する。"""
         self._camera_device_infos = camera_device_infos
         self._refresh_camera_table()
 
 
     def _refresh_camera_table(self) -> None:
-        """Redraw the camera status table."""
+        """カメラ状態テーブルを再描画する。"""
         running_ids = set(self._camera_stream_manager.running_device_ids())
         row_count = len(self._camera_device_infos)
         self.camera_table.setRowCount(row_count)
@@ -112,7 +112,7 @@ class MainWindow(QMainWindow):
 
 
     def _toggle_camera(self, device_id: str, checked: bool) -> None:
-        """Start or stop a camera when the toggle button is pressed."""
+        """トグルボタン押下でカメラを開始・停止する。"""
         if checked:
             self._camera_stream_manager.start_camera(device_id)
             # --- プレビューウィンドウを開く
@@ -131,13 +131,13 @@ class MainWindow(QMainWindow):
 
 
     def _on_preview_closed(self, device_id: str) -> None:
-        """Remove preview window tracking when it is closed."""
+        """プレビューウィンドウが閉じられた際の後処理。"""
         if device_id in self._preview_windows:
             del self._preview_windows[device_id]
 
 
     def closeEvent(self, event: QCloseEvent) -> None:
-        """Stop all streams when the window is closed."""
+        """ウィンドウを閉じる際にすべてのストリームを停止する。"""
         for preview in list(self._preview_windows.values()):
             preview.close()
         self._preview_windows.clear()
