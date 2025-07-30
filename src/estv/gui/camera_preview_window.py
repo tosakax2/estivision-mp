@@ -57,7 +57,8 @@ class CameraPreviewWindow(QDialog):
 
         self.progress_bar = QProgressBar()
         self.progress_bar.setRange(0, 10)
-        self.progress_bar.hide()
+        self.progress_bar.setFormat("%v / %m 枚")
+        self.progress_bar.setFixedWidth(480)
 
         self.status_label = QLabel()
         self.status_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
@@ -145,7 +146,6 @@ class CameraPreviewWindow(QDialog):
         self._calib_timer.stop()
         self.calib_button.setChecked(False)
         self.calib_button.setText("キャリブレーション開始")
-        self.progress_bar.hide()
         self.progress_bar.setValue(0)
         self._update_status_label()
         if cancel:
