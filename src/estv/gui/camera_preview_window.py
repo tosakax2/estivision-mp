@@ -51,7 +51,8 @@ class CameraPreviewWindow(QDialog):
         self.setFixedSize(self.size())
 
         # --- シグナル接続
-        self.camera_stream_manager.q_image_ready.connect(self._on_image_ready)
+        self._on_image_ready_slot = lambda cid, img: self._on_image_ready(cid, img)
+        self.camera_stream_manager.q_image_ready.connect(self._on_image_ready_slot)
 
 
     def _on_image_ready(self, device_id: str, qimg: QImage) -> None:
@@ -68,7 +69,7 @@ class CameraPreviewWindow(QDialog):
 
     def closeEvent(self, event: QCloseEvent) -> None:
         """ウィンドウが閉じられたときの処理。"""
-        self.camera_stream_manager.q_image_ready.disconnect(self._on_image_ready)
+        self.camera_stream_manager.q_image_ready.disconnect(self._on_image_ready_slot)
         self.camera_stream_manager.stop_camera(self.device_id)
         if self._on_closed:
             self._on_closed(self.device_id)
