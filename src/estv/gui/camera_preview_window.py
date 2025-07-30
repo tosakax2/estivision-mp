@@ -1,6 +1,7 @@
 # estv/gui/camera_preview_window.py
 
 from collections.abc import Callable
+import os
 
 import numpy as np
 from PySide6.QtWidgets import (
@@ -149,18 +150,25 @@ class CameraPreviewWindow(QDialog):
         """Capture calibration frames periodically."""
         if not self.calibrating or self._last_image is None:
             return
-        # チェスボード検出
+        # --- チェスボード検出
         found = self.calibrator.add_chessboard_image(self._last_image)
         self._frame_count += 1
         if found:
             self.progress_bar.setValue(len(self.calibrator.image_points))
 
-        # 十分な枚数集まったらキャリブレーション実行
+        # --- 十分な枚数集まったらキャリブレーション実行
         if len(self.calibrator.image_points) >= 20:
             try:
-                rms = self.calibrator.calibrate(self._last_image.shape[:2])
                 self.calibration_done = True
                 self.status_label.setText(f"平均再投影誤差: {self.calibrator.reprojection_error:.3f}")
+
+                # --- パラメータを保存
+                data_dir = os.path.join(os.path.dirname(__file__), "../../data")
+                data_dir = os.path.abspath(data_dir)
+                os.makedirs(data_dir, exist_ok=True)
+                calib_path = os.path.join(data_dir, f"calib_{self.device_id}.npz")
+                self.calibrator.save(calib_path)
+                print(f"キャリブレーションパラメータを保存: {calib_path}")
             except Exception as e:
                 self.status_label.setStyleSheet(f"color: {WARNING_COLOR};")
                 self.status_label.setText(f"キャリブレーション失敗: {str(e)}")
