@@ -1,0 +1,35 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "estivision-mp"
+version = "0.1.0"
+description = "姿勢推定仮想トラッカー"
+authors = [
+  { name = "tosakax2", email = "tosakax2@gmail.com" }
+]
+readme = "README.md"
+requires-python = ">=3.11"
+license = { file = "LICENSE" }
+dependencies = [
+  "numpy",
+  "opencv-python",
+  "python-osc",
+  "PySide6",
+  "qdarkstyle",
+]
+
+[project.optional-dependencies]
+dev = [
+  "pytest"
+]
+
+[project.scripts]
+estivision = "estv.__main__:main"
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+[tool.setuptools.packages.find]
+where = ["src"]
