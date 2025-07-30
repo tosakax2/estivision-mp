@@ -4,7 +4,7 @@
 from collections.abc import Callable
 import os
 from pathlib import Path
-import re
+import sys
 
 import numpy as np
 from PySide6.QtWidgets import (
@@ -27,18 +27,29 @@ from estv.gui.style_constants import (
     SUBTEXT_COLOR,
 )
 
+
 # --- 定数
 CALIB_IMAGES_REQUIRED = 20        # キャリブレーションに必要な枚数
 CALIB_CAPTURE_INTERVAL_MS = 500   # キャプチャ間隔 (ミリ秒)
 
 
-def _calib_file_path(device_id: str) -> str:
-    """デバイスIDからキャリブレーションファイルパスを返す。"""
-    project_root = Path(__file__).resolve().parents[3]
-    data_dir = project_root / "data"
+def _get_data_dir() -> Path:
+    """exe化にも対応した data/ ディレクトリ取得"""
+    # exeの場合はexeと同じ場所/data/
+    if getattr(sys, 'frozen', False):
+        base_dir = Path(sys.executable).parent
+    else:
+        base_dir = Path(__file__).resolve().parents[3]
+    data_dir = base_dir / "data"
     data_dir.mkdir(exist_ok=True)
+    return data_dir
+
+
+def _calib_file_path(device_id: str) -> str:
+    """デバイスIDからキャリブレーションファイルパスを返す（exe対応）"""
+    import re
     safe_id = re.sub(r"[^A-Za-z0-9._-]", "_", device_id)
-    return str(data_dir / f"calib_{safe_id}.npz")
+    return str(_get_data_dir() / f"calib_{safe_id}.npz")
 
 
 class CameraPreviewWindow(QDialog):
