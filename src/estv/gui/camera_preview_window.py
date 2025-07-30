@@ -58,6 +58,22 @@ class CameraPreviewWindow(QDialog):
         self._frame_count = 0
         self._last_image = None
 
+        # --- キャリブレーションパラメータ自動ロード
+        project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../../"))
+        data_dir = os.path.join(project_root, "data")
+        safe_id = re.sub(r"[^A-Za-z0-9._-]", "_", self.device_id)
+        calib_path = os.path.join(data_dir, f"calib_{safe_id}.npz")
+        if os.path.exists(calib_path):
+            try:
+                self.calibrator.load(calib_path)
+                self.calibration_done = True
+                self.progress_bar_value_on_load = True
+            except Exception as e:
+                print(f"キャリブレーションパラメータ読み込み失敗: {e}")
+                self.progress_bar_value_on_load = False
+        else:
+            self.progress_bar_value_on_load = False
+
         # --- UI構成
         self.image_label = QLabel("カメラ映像がここに表示されます")
         self.image_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
@@ -76,6 +92,8 @@ class CameraPreviewWindow(QDialog):
         self.progress_bar.setValue(0)
         self.progress_bar.setFormat("%v / %m 枚")
         self.progress_bar.setFixedWidth(480)
+        if self.progress_bar_value_on_load:
+            self.progress_bar.setValue(self.progress_bar.maximum())
 
         self.calib_button = QPushButton("キャリブレーション開始")
         self.calib_button.setCheckable(True)
@@ -190,7 +208,10 @@ class CameraPreviewWindow(QDialog):
         self._calib_timer.stop()
         self.calib_button.setChecked(False)
         self.calib_button.setText("キャリブレーション開始")
-        self.progress_bar.setValue(0)
+        if cancel:
+            self.progress_bar.setValue(0)
+        else:
+            self.progress_bar.setValue(self.progress_bar.maximum())
         self._update_status_label()
         if cancel:
             self.status_label.setText("キャリブレーションが必要です")
