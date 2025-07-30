@@ -15,7 +15,7 @@ from PySide6.QtGui import QPixmap, QImage, QCloseEvent
 
 from estv.devices.camera_stream_manager import CameraStreamManager
 from estv.devices.camera_calibrator import CameraCalibrator
-from estv.gui.style_constants import TEXT_COLOR, BACKGROUND_COLOR, WARNING_COLOR, SUCCESS_COLOR
+from estv.gui.style_constants import TEXT_COLOR, BACKGROUND_COLOR, WARNING_COLOR, SUBTEXT_COLOR
 
 
 class CameraPreviewWindow(QDialog):
@@ -106,7 +106,7 @@ class CameraPreviewWindow(QDialog):
     def _on_calib_toggle(self, checked: bool):
         if checked:
             self.calib_button.setText("キャリブレーション停止")
-            self.status_label.setStyleSheet(f"color: {SUCCESS_COLOR}; font-weight: bold;")
+            self.status_label.setStyleSheet(f"color: {SUBTEXT_COLOR};")
             self.status_label.setText("チェスボード画像を自動取得中...")
             self.progress_bar.setValue(0)
             self.progress_bar.show()
@@ -133,10 +133,9 @@ class CameraPreviewWindow(QDialog):
             try:
                 rms = self.calibrator.calibrate(self._last_image.shape[:2])
                 self.calibration_done = True
-                self.status_label.setStyleSheet(f"color: {SUCCESS_COLOR}; font-weight: bold;")
-                self.status_label.setText(f"キャリブレーション完了\n平均再投影誤差: {self.calibrator.reprojection_error:.3f}")
+                self.status_label.setText(f"平均再投影誤差: {self.calibrator.reprojection_error:.3f}")
             except Exception as e:
-                self.status_label.setStyleSheet(f"color: {WARNING_COLOR}; font-weight: bold;")
+                self.status_label.setStyleSheet(f"color: {WARNING_COLOR};")
                 self.status_label.setText(f"キャリブレーション失敗: {str(e)}")
             self._stop_calibration(cancel=False)
 
@@ -150,16 +149,15 @@ class CameraPreviewWindow(QDialog):
         self.progress_bar.setValue(0)
         self._update_status_label()
         if cancel:
-            self.status_label.setText("キャリブレーション中止")
+            self.status_label.setText("キャリブレーションが必要です")
 
 
     def _update_status_label(self):
         """現在のキャリブ状態表示"""
         if self.calibration_done:
-            self.status_label.setStyleSheet(f"color: {SUCCESS_COLOR}; font-weight: bold;")
-            self.status_label.setText(f"キャリブレーション完了\n平均再投影誤差: {self.calibrator.reprojection_error:.3f}")
+            self.status_label.setText(f"平均再投影誤差: {self.calibrator.reprojection_error:.3f}")
         else:
-            self.status_label.setStyleSheet(f"color: {WARNING_COLOR}; font-weight: bold;")
+            self.status_label.setStyleSheet(f"color: {WARNING_COLOR};")
             self.status_label.setText("キャリブレーションが必要です")
 
 
