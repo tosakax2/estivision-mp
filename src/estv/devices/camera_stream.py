@@ -14,7 +14,20 @@ CAPTURE_FPS = 30 # 最大フレームレート
 
 
 def resize_if_needed(frame: np.ndarray, max_length: int) -> np.ndarray:
-    """長辺がmax_lengthを超える場合のみリサイズして返す。"""
+    """Resize the frame only if its longer side exceeds ``max_length``.
+
+    Parameters
+    ----------
+    frame : numpy.ndarray
+        Image array in BGR format.
+    max_length : int
+        Maximum allowed size of the longer side.
+
+    Returns
+    -------
+    numpy.ndarray
+        Possibly resized frame.
+    """
     h, w = frame.shape[:2]
     if max(w, h) > max_length:
         scale = max_length / max(w, h)
@@ -24,7 +37,7 @@ def resize_if_needed(frame: np.ndarray, max_length: int) -> np.ndarray:
 
 
 class CameraStream(QThread):
-    """カメラストリームを処理するスレッドクラス。"""
+    """Thread that continually captures frames from a camera device."""
 
     # --- シグナル
     error = Signal(str) # エラーメッセージを通知
@@ -33,7 +46,7 @@ class CameraStream(QThread):
 
 
     def __init__(self, device_id: int) -> None:
-        """コンストラクタ。"""
+        """Initialize the stream thread for the given device index."""
         super().__init__()
 
         # --- 引数保持
@@ -41,7 +54,7 @@ class CameraStream(QThread):
 
 
     def run(self) -> None:
-        """カメラストリームの処理を開始する。"""
+        """Main capture loop executed when the thread starts."""
         cap = cv2.VideoCapture(self._device_id, cv2.CAP_DSHOW)
 
         try:
@@ -92,5 +105,5 @@ class CameraStream(QThread):
 
     @Slot()
     def stop(self) -> None:
-        """映像取得ループを停止させる。"""
+        """Request graceful termination of the capture loop."""
         self.requestInterruption()

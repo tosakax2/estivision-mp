@@ -10,7 +10,7 @@ from estv.devices.camera_stream import CameraStream
 
 
 class CameraStreamManager(QObject):
-    """複数のカメラストリームを管理するクラス。"""
+    """Manage multiple :class:`CameraStream` instances."""
 
     streams_updated = Signal()
     frame_ready = Signal(str, object)
@@ -23,6 +23,17 @@ class CameraStreamManager(QObject):
         auto_restart: bool = False,
         restart_delay_ms: int = 2000,
     ) -> None:
+        """Create a manager.
+
+        Parameters
+        ----------
+        device_index_lookup : Callable[[str], int | None]
+            Function that maps device IDs to indices for ``cv2.VideoCapture``.
+        auto_restart : bool, optional
+            Restart streams automatically when an error occurs.
+        restart_delay_ms : int, optional
+            Delay before attempting restart in milliseconds.
+        """
         super().__init__()
 
         # --- ストリームを保持する辞書
@@ -43,7 +54,7 @@ class CameraStreamManager(QObject):
 
 
     def start_camera(self, camera_id: str) -> None:
-        """指定したカメラIDのストリームを開始する。"""
+        """Start streaming from the camera with the given ID."""
         device_index = self._device_index_lookup(camera_id)
         if device_index is None:
             warnings.warn(f"Camera {camera_id} not found")
@@ -63,7 +74,7 @@ class CameraStreamManager(QObject):
 
 
     def stop_camera(self, camera_id: str) -> None:
-        """指定したカメラIDのストリームを停止しクリーンアップする。"""
+        """Stop the stream for ``camera_id`` and clean up resources."""
         with self._lock:
             stream = self._streams.get(camera_id)
 
@@ -77,19 +88,19 @@ class CameraStreamManager(QObject):
 
 
     def stop_all(self) -> None:
-        """全てのカメラストリームを停止する。"""
+        """Stop all running camera streams."""
         for camera_id in self.running_device_ids():
             self.stop_camera(camera_id)
         self.streams_updated.emit()
 
 
     def shutdown(self) -> None:
-        """すべてのカメラストリームを停止し、終了を待機する。"""
+        """Stop every stream and wait for threads to finish."""
         self.stop_all()
 
 
     def handle_error(self, camera_id: str, msg: str) -> None:
-        """カメラストリームのエラーを処理する。"""
+        """Handle a streaming error for ``camera_id``."""
         print(f"[Camera {camera_id}] Error: {msg}")
         with self._lock:
             if camera_id in self._streams:
@@ -101,7 +112,7 @@ class CameraStreamManager(QObject):
 
 
     def cleanup_stream(self, camera_id: str) -> None:
-        """指定したカメラIDのストリームをクリーンアップする。"""
+        """Remove finished stream and optionally restart it."""
         with self._lock:
             if camera_id in self._streams:
                 stream = self._streams[camera_id]
@@ -118,6 +129,6 @@ class CameraStreamManager(QObject):
 
 
     def running_device_ids(self) -> list[str]:
-        """現在起動中のカメラIDリストを返す。"""
+        """Return a list of currently running camera IDs."""
         with self._lock:
             return list(self._streams.keys())

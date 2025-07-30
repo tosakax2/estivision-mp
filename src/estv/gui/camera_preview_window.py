@@ -28,6 +28,19 @@ class CameraPreviewWindow(QDialog):
         parent: QWidget | None = None,
         on_closed: Callable[[str], None] | None = None,
     ) -> None:
+        """Create the preview dialog for a given camera device.
+
+        Parameters
+        ----------
+        camera_stream_manager : CameraStreamManager
+            Manager that provides camera frames.
+        device_id : str, optional
+            Identifier of the camera to preview.
+        parent : QWidget | None, optional
+            Parent widget for this dialog.
+        on_closed : Callable[[str], None] | None, optional
+            Callback invoked with ``device_id`` when the window closes.
+        """
         super().__init__(parent)
         self.setWindowTitle("ESTV - カメラプレビュー")
         self.device_id = device_id
@@ -89,22 +102,34 @@ class CameraPreviewWindow(QDialog):
 
 
     def _on_image_ready(self, device_id: str, qimg: QImage) -> None:
+        """Handle a new preview image for this device.
+
+        Parameters
+        ----------
+        device_id : str
+            Identifier of the camera that produced ``qimg``.
+        qimg : QImage
+            Frame converted for Qt display.
+        """
         if device_id != self.device_id:
             return
-        self.image_label.setPixmap(QPixmap.fromImage(qimg).scaled(
-            self.image_label.size(),
-            Qt.AspectRatioMode.KeepAspectRatio,
-            Qt.TransformationMode.SmoothTransformation
-        ))
+        self.image_label.setPixmap(
+            QPixmap.fromImage(qimg).scaled(
+                self.image_label.size(),
+                Qt.AspectRatioMode.KeepAspectRatio,
+                Qt.TransformationMode.SmoothTransformation,
+            )
+        )
 
 
-    def _on_frame_ready(self, device_id: str, frame):
-        """最新フレームを保存（キャリブ中に利用）"""
+    def _on_frame_ready(self, device_id: str, frame: np.ndarray) -> None:
+        """Store the latest frame for calibration use."""
         if device_id == self.device_id:
             self._last_image = frame
 
 
-    def _on_calib_toggle(self, checked: bool):
+    def _on_calib_toggle(self, checked: bool) -> None:
+        """Toggle calibration mode on or off."""
         if checked:
             self.calib_button.setText("キャリブレーション停止")
             self.status_label.setStyleSheet(f"color: {SUBTEXT_COLOR};")
@@ -119,8 +144,8 @@ class CameraPreviewWindow(QDialog):
             self._stop_calibration(cancel=True)
 
 
-    def _on_calib_frame_timer(self):
-        """キャリブレーション用画像をタイマーで追加"""
+    def _on_calib_frame_timer(self) -> None:
+        """Capture calibration frames periodically."""
         if not self.calibrating or self._last_image is None:
             return
         # チェスボード検出
@@ -141,8 +166,8 @@ class CameraPreviewWindow(QDialog):
             self._stop_calibration(cancel=False)
 
 
-    def _stop_calibration(self, cancel=False):
-        """キャリブレーションを中止または完了処理"""
+    def _stop_calibration(self, cancel: bool = False) -> None:
+        """Stop calibration loop and reset UI state."""
         self.calibrating = False
         self._calib_timer.stop()
         self.calib_button.setChecked(False)
@@ -153,8 +178,8 @@ class CameraPreviewWindow(QDialog):
             self.status_label.setText("キャリブレーションが必要です")
 
 
-    def _update_status_label(self):
-        """現在のキャリブ状態表示"""
+    def _update_status_label(self) -> None:
+        """Update the status label according to calibration state."""
         if self.calibration_done:
             self.status_label.setText(f"平均再投影誤差: {self.calibrator.reprojection_error:.3f}")
         else:
@@ -163,7 +188,7 @@ class CameraPreviewWindow(QDialog):
 
 
     def closeEvent(self, event: QCloseEvent) -> None:
-        # --- キャリブ中なら安全に停止
+        """Handle window close and clean up running streams."""
         if self.calibrating:
             self._stop_calibration(cancel=True)
         self.camera_stream_manager.q_image_ready.disconnect(self._on_image_ready_slot)
