@@ -16,9 +16,9 @@ class CameraPreviewWindow(QDialog):
     def __init__(
         self,
         camera_stream_manager: CameraStreamManager,
-        device_id: int = 0,
+        device_id: str = "",
         parent: QWidget | None = None,
-        on_closed: Callable[[int], None] | None = None,
+        on_closed: Callable[[str], None] | None = None,
     ) -> None:
         """コンストラクタ。"""
         super().__init__(parent)
@@ -54,7 +54,7 @@ class CameraPreviewWindow(QDialog):
         self.camera_stream_manager.q_image_ready.connect(self._on_image_ready)
 
 
-    def _on_image_ready(self, device_id: int, qimg: QImage) -> None:
+    def _on_image_ready(self, device_id: str, qimg: QImage) -> None:
         """カメラからの映像が準備できたときに呼び出される。"""
         if device_id != self.device_id:
             return

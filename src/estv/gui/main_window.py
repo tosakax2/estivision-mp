@@ -7,8 +7,8 @@ from PySide6.QtWidgets import (
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QColor, QCloseEvent
 
-from estv.devices.camera_stream_manager import CameraStreamManager
 from estv.devices.media_device_manager import MediaDeviceManager
+from estv.devices.camera_stream_manager import CameraStreamManager
 from estv.gui.camera_preview_window import CameraPreviewWindow
 from estv.gui.style_constants import SUCCESS_COLOR, WARNING_COLOR
 
@@ -20,16 +20,17 @@ class MainWindow(QMainWindow):
         """コンストラクタ。"""
         super().__init__()
 
-        self._camera_stream_manager: CameraStreamManager = CameraStreamManager()
-        self._camera_stream_manager.streams_updated.connect(self._refresh_camera_table)
-
         self._media_device_manager: MediaDeviceManager = MediaDeviceManager()
+        self._camera_stream_manager: CameraStreamManager = CameraStreamManager(
+            self._media_device_manager.camera_index_by_id
+        )
+        self._camera_stream_manager.streams_updated.connect(self._refresh_camera_table)
         self._media_device_manager.camera_devices_update_signal.connect(
             self._on_camera_devices_update
         )
 
         self._camera_device_infos: list[dict[str, str]] = []
-        self._preview_windows: dict[int, CameraPreviewWindow] = {}
+        self._preview_windows: dict[str, CameraPreviewWindow] = {}
 
         self.setWindowTitle("ESTV - ESTiVision-MP")
         self._setup_ui()
@@ -78,12 +79,12 @@ class MainWindow(QMainWindow):
         self.camera_table.setRowCount(row_count)
 
         for row, info in enumerate(self._camera_device_infos):
-            device_id = row
-            name = info.get("name", f"Camera {device_id}")
-            running = device_id in running_ids
+            camera_id = info.get("id", str(row))
+            name = info.get("name", f"Camera {row}")
+            running = camera_id in running_ids
 
             # --- ID
-            id_item = QTableWidgetItem(str(device_id))
+            id_item = QTableWidgetItem(str(row))
             id_item.setTextAlignment(Qt.AlignCenter)
             self.camera_table.setItem(row, 0, id_item)
 
@@ -104,13 +105,13 @@ class MainWindow(QMainWindow):
             btn.setChecked(running)
             btn.setMinimumWidth(60)
             btn.setStyleSheet("padding: 4px 12px; margin: 4px;")
-            btn.clicked.connect(lambda checked, d=device_id: self._toggle_camera(d, checked))
+            btn.clicked.connect(lambda checked, cid=camera_id: self._toggle_camera(cid, checked))
             self.camera_table.setCellWidget(row, 3, btn)
 
             self.camera_table.setRowHeight(row, 32)
 
 
-    def _toggle_camera(self, device_id: int, checked: bool) -> None:
+    def _toggle_camera(self, device_id: str, checked: bool) -> None:
         """カメラの起動・停止トグルイベント。"""
         if checked:
             self._camera_stream_manager.start_camera(device_id)
@@ -129,7 +130,7 @@ class MainWindow(QMainWindow):
                 self._camera_stream_manager.stop_camera(device_id)
 
 
-    def _on_preview_closed(self, device_id: int) -> None:
+    def _on_preview_closed(self, device_id: str) -> None:
         """プレビューウィンドウが閉じられたとき呼ばれる。"""
         if device_id in self._preview_windows:
             del self._preview_windows[device_id]
