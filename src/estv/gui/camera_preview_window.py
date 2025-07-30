@@ -3,6 +3,7 @@
 
 from collections.abc import Callable
 import os
+import re
 
 import numpy as np
 from PySide6.QtWidgets import (
@@ -173,7 +174,8 @@ class CameraPreviewWindow(QDialog):
                 project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../../"))
                 data_dir = os.path.join(project_root, "data")
                 os.makedirs(data_dir, exist_ok=True)
-                calib_path = os.path.join(data_dir, f"calib_{self.device_id}.npz")
+                safe_id = re.sub(r"[^A-Za-z0-9._-]", "_", self.device_id)
+                calib_path = os.path.join(data_dir, f"calib_{safe_id}.npz")
                 self.calibrator.save(calib_path)
                 print(f"キャリブレーションパラメータを保存: {calib_path}")
             except Exception as e:
