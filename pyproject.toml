@@ -22,7 +22,9 @@ dependencies = [
 
 [project.optional-dependencies]
 dev = [
-  "pytest"
+  "Pillow",
+  "pytest",
+  "reportlab"
 ]
 
 [project.scripts]
