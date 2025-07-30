@@ -220,12 +220,23 @@ class CameraPreviewWindow(QDialog):
         self.calib_button.setChecked(False)
         self.calib_button.setText("キャリブレーション開始")
         if cancel:
-            self.progress_bar.setValue(0)
+            # --- 既存のキャリブレーション結果があれば再読み込み
+            calib_path = _calib_file_path(self.device_id)
+            if os.path.exists(calib_path):
+                try:
+                    self.calibrator.load(calib_path)
+                    self.calibration_done = True
+                    self.progress_bar.setValue(self.progress_bar.maximum())
+                except Exception as e:
+                    print(f"キャリブレーションパラメータ読み込み失敗: {e}")
+                    self.calibration_done = False
+                    self.progress_bar.setValue(0)
+            else:
+                self.calibration_done = False
+                self.progress_bar.setValue(0)
         else:
             self.progress_bar.setValue(self.progress_bar.maximum())
         self._update_status_label()
-        if cancel:
-            self.status_label.setText("キャリブレーションが必要です")
 
 
     def _update_status_label(self) -> None:
