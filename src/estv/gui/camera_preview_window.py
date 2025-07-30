@@ -57,7 +57,7 @@ class CameraPreviewWindow(QDialog):
         self.calib_button.clicked.connect(self._on_calib_toggle)
 
         self.progress_bar = QProgressBar()
-        self.progress_bar.setRange(0, 10)
+        self.progress_bar.setRange(0, 20)
         self.progress_bar.setFormat("%v / %m 枚")
         self.progress_bar.setFixedWidth(480)
 
@@ -129,7 +129,7 @@ class CameraPreviewWindow(QDialog):
             self.progress_bar.setValue(len(self.calibrator.image_points))
 
         # 十分な枚数集まったらキャリブレーション実行
-        if len(self.calibrator.image_points) >= 10:
+        if len(self.calibrator.image_points) >= 20:
             try:
                 rms = self.calibrator.calibrate(self._last_image.shape[:2])
                 self.calibration_done = True
