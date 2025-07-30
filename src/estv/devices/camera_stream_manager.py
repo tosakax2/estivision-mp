@@ -16,7 +16,7 @@ class CameraStreamManager(QObject):
     q_image_ready = Signal(int, object)
 
 
-    def __init__(self, auto_restart: bool = False, restart_delay_ms: int = 2000):
+    def __init__(self, auto_restart: bool = False, restart_delay_ms: int = 2000) -> None:
         super().__init__()
 
         # --- ストリームを保持する辞書
@@ -33,7 +33,7 @@ class CameraStreamManager(QObject):
         self._lock = threading.Lock()
 
 
-    def start_camera(self, device_id: int):
+    def start_camera(self, device_id: int) -> None:
         """指定したデバイスIDのカメラストリームを開始する。"""
         with self._lock:
             if device_id in self._streams:
@@ -49,7 +49,7 @@ class CameraStreamManager(QObject):
         self.streams_updated.emit()
 
 
-    def stop_camera(self, device_id: int):
+    def stop_camera(self, device_id: int) -> None:
         """指定したデバイスIDのカメラストリームを停止しクリーンアップする。"""
         with self._lock:
             stream = self._streams.get(device_id)
@@ -63,7 +63,7 @@ class CameraStreamManager(QObject):
         self.cleanup_stream(device_id)
 
 
-    def stop_all(self):
+    def stop_all(self) -> None:
         """全てのカメラストリームを停止する。"""
         for device_id in self.running_device_ids():
             self.stop_camera(device_id)
@@ -75,7 +75,7 @@ class CameraStreamManager(QObject):
         self.stop_all()
 
 
-    def handle_error(self, device_id: int, msg: str):
+    def handle_error(self, device_id: int, msg: str) -> None:
         """カメラストリームのエラーを処理する。"""
         print(f"[Camera {device_id}] Error: {msg}")
         with self._lock:
@@ -87,7 +87,7 @@ class CameraStreamManager(QObject):
             self._pending_restart.add(device_id)
 
 
-    def cleanup_stream(self, device_id: int):
+    def cleanup_stream(self, device_id: int) -> None:
         """指定したデバイスIDのカメラストリームをクリーンアップする。"""
         with self._lock:
             if device_id in self._streams:
