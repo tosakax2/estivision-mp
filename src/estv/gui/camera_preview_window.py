@@ -19,7 +19,25 @@ from PySide6.QtGui import QPixmap, QImage, QCloseEvent
 
 from estv.devices.camera_stream_manager import CameraStreamManager
 from estv.devices.camera_calibrator import CameraCalibrator
-from estv.gui.style_constants import TEXT_COLOR, BACKGROUND_COLOR, WARNING_COLOR, SUBTEXT_COLOR
+from estv.gui.style_constants import (
+    TEXT_COLOR,
+    BACKGROUND_COLOR,
+    WARNING_COLOR,
+    SUBTEXT_COLOR,
+)
+
+# --- 定数
+CALIB_IMAGES_REQUIRED = 20        # キャリブレーションに必要な枚数
+CALIB_CAPTURE_INTERVAL_MS = 500   # キャプチャ間隔 (ミリ秒)
+
+
+def _calib_file_path(device_id: str) -> str:
+    """デバイスIDからキャリブレーションファイルパスを返す。"""
+    project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../../"))
+    data_dir = os.path.join(project_root, "data")
+    os.makedirs(data_dir, exist_ok=True)
+    safe_id = re.sub(r"[^A-Za-z0-9._-]", "_", device_id)
+    return os.path.join(data_dir, f"calib_{safe_id}.npz")
 
 
 class CameraPreviewWindow(QDialog):
@@ -59,10 +77,7 @@ class CameraPreviewWindow(QDialog):
         self._last_image = None
 
         # --- キャリブレーションパラメータ自動ロード
-        project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../../"))
-        data_dir = os.path.join(project_root, "data")
-        safe_id = re.sub(r"[^A-Za-z0-9._-]", "_", self.device_id)
-        calib_path = os.path.join(data_dir, f"calib_{safe_id}.npz")
+        calib_path = _calib_file_path(self.device_id)
         if os.path.exists(calib_path):
             try:
                 self.calibrator.load(calib_path)
@@ -88,7 +103,7 @@ class CameraPreviewWindow(QDialog):
         self.status_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
 
         self.progress_bar = QProgressBar()
-        self.progress_bar.setRange(0, 20)
+        self.progress_bar.setRange(0, CALIB_IMAGES_REQUIRED)
         self.progress_bar.setValue(0)
         self.progress_bar.setFormat("%v / %m 枚")
         self.progress_bar.setFixedWidth(480)
@@ -117,7 +132,7 @@ class CameraPreviewWindow(QDialog):
         
         # --- キャリブ用タイマー
         self._calib_timer = QTimer(self)
-        self._calib_timer.setInterval(500)  # 0.5秒ごと
+        self._calib_timer.setInterval(CALIB_CAPTURE_INTERVAL_MS)  # 0.5秒ごと
         self._calib_timer.timeout.connect(self._on_calib_frame_timer)
 
         self._update_status_label()
@@ -177,7 +192,7 @@ class CameraPreviewWindow(QDialog):
             self.progress_bar.setValue(len(self.calibrator.image_points))
 
         # --- 十分な枚数集まったらキャリブレーション実行
-        if len(self.calibrator.image_points) >= 20:
+        if len(self.calibrator.image_points) >= CALIB_IMAGES_REQUIRED:
             try:
                 self.calibrator.calibrate(self._last_image.shape[:2])
                 self.calibration_done = True
@@ -189,11 +204,7 @@ class CameraPreviewWindow(QDialog):
                     self.status_label.setText("平均再投影誤差: 計算不可")
 
                 # --- プロジェクトルート直下のdata/に保存
-                project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../../"))
-                data_dir = os.path.join(project_root, "data")
-                os.makedirs(data_dir, exist_ok=True)
-                safe_id = re.sub(r"[^A-Za-z0-9._-]", "_", self.device_id)
-                calib_path = os.path.join(data_dir, f"calib_{safe_id}.npz")
+                calib_path = _calib_file_path(self.device_id)
                 self.calibrator.save(calib_path)
                 print(f"キャリブレーションパラメータを保存: {calib_path}")
             except Exception as e:
