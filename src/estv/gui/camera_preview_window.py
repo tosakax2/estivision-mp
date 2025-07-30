@@ -35,7 +35,7 @@ class CameraPreviewWindow(QDialog):
         self._on_closed = on_closed
 
         # --- キャリブ関連
-        self.calibrator = CameraCalibrator(board_size=(6, 9), square_size=1.0)
+        self.calibrator = CameraCalibrator()
         self.calibrating = False
         self.calibration_done = False
         self._frame_count = 0
@@ -113,7 +113,7 @@ class CameraPreviewWindow(QDialog):
             self.progress_bar.show()
             self.calibrating = True
             self._frame_count = 0
-            self.calibrator = CameraCalibrator(board_size=(7, 6), square_size=1.0)
+            self.calibrator = CameraCalibrator()
             self._calib_timer.start()
         else:
             self._stop_calibration(cancel=True)

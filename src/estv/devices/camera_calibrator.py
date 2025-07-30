@@ -7,16 +7,13 @@ import numpy as np
 class CameraCalibrator:
     """チェスボード画像からカメラ内部パラメータを推定するクラス。"""
 
-    def __init__(self, board_size=(6, 9), square_size=1.0):
-        """
-        Args:
-            board_size: チェスボード交点の数 (columns, rows)
-            square_size: 1マスの実寸（mm, cm, 任意単位）
-        """
-        self.board_size = board_size
-        self.square_size = square_size
-        self.object_points = []  # 3D座標(ワールド)
-        self.image_points = []   # 2D座標(画像)
+    def __init__(self):
+        """コンストラクタ。"""
+
+        self.board_size = (6, 9)
+        self.square_size = 20.0     # 1マスの一辺
+        self.object_points = []     # 3D座標(ワールド)
+        self.image_points = []      # 2D座標(画像)
         self._objp = self._create_object_points()
 
         self._camera_matrix = None
