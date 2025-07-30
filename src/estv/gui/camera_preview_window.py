@@ -1,6 +1,13 @@
 # estv/gui/camera_preview_window.py
 
-from PySide6.QtWidgets import QDialog, QVBoxLayout, QLabel, QPushButton, QWidget
+from PySide6.QtWidgets import (
+    QDialog,
+    QVBoxLayout,
+    QLabel,
+    QPushButton,
+    QWidget,
+    QProgressBar,
+)
 from PySide6.QtCore import Qt, QTimer
 from PySide6.QtGui import QPixmap, QImage, QCloseEvent
 from collections.abc import Callable
@@ -48,6 +55,10 @@ class CameraPreviewWindow(QDialog):
         self.calib_button.setStyleSheet("padding: 6px 18px;")
         self.calib_button.clicked.connect(self._on_calib_toggle)
 
+        self.progress_bar = QProgressBar()
+        self.progress_bar.setRange(0, 10)
+        self.progress_bar.hide()
+
         self.status_label = QLabel()
         self.status_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.status_label.setStyleSheet(f"color: {WARNING_COLOR}; font-weight: bold;")
@@ -55,6 +66,7 @@ class CameraPreviewWindow(QDialog):
         layout = QVBoxLayout()
         layout.addWidget(self.image_label, alignment=Qt.AlignmentFlag.AlignCenter)
         layout.addWidget(self.calib_button, alignment=Qt.AlignmentFlag.AlignCenter)
+        layout.addWidget(self.progress_bar, alignment=Qt.AlignmentFlag.AlignCenter)
         layout.addWidget(self.status_label, alignment=Qt.AlignmentFlag.AlignCenter)
         self.setLayout(layout)
         self.adjustSize()
@@ -94,6 +106,8 @@ class CameraPreviewWindow(QDialog):
             self.calib_button.setText("キャリブレーション停止")
             self.status_label.setStyleSheet(f"color: {SUCCESS_COLOR}; font-weight: bold;")
             self.status_label.setText("チェスボード画像を自動取得中...")
+            self.progress_bar.setValue(0)
+            self.progress_bar.show()
             self.calibrating = True
             self._frame_count = 0
             self.calibrator = CameraCalibrator(board_size=(7, 6), square_size=1.0)
@@ -110,9 +124,7 @@ class CameraPreviewWindow(QDialog):
         found = self.calibrator.add_chessboard_image(self._last_image)
         self._frame_count += 1
         if found:
-            self.status_label.setText(f"チェスボード検出: {len(self.calibrator.image_points)}枚")
-        else:
-            self.status_label.setText(f"チェスボード未検出...({self._frame_count}フレーム)")
+            self.progress_bar.setValue(len(self.calibrator.image_points))
 
         # 十分な枚数集まったらキャリブレーション実行
         if len(self.calibrator.image_points) >= 10:
@@ -133,6 +145,8 @@ class CameraPreviewWindow(QDialog):
         self._calib_timer.stop()
         self.calib_button.setChecked(False)
         self.calib_button.setText("キャリブレーション開始")
+        self.progress_bar.hide()
+        self.progress_bar.setValue(0)
         self._update_status_label()
         if cancel:
             self.status_label.setText("キャリブレーション中止")
