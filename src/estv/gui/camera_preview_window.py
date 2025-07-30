@@ -1,5 +1,4 @@
 # estv/gui/camera_preview_window.py
-
 """カメラプレビュー表示およびキャリブレーションを行うウィンドウ。"""
 
 from collections.abc import Callable

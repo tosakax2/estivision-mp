@@ -1,5 +1,4 @@
 # estv/devices/camera_calibrator.py
-
 """カメラキャリブレーションに関連するクラスを提供するモジュール。"""
 
 from pathlib import Path

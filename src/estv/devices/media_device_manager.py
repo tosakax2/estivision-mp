@@ -1,9 +1,8 @@
 # estv/devices/media_device_manager.py
+"""利用可能なメディアデバイスの監視を行うモジュール。"""
 
 from PySide6.QtCore import QObject, QTimer, Signal
 from PySide6.QtMultimedia import QCameraDevice, QMediaDevices
-
-"""利用可能なメディアデバイスの監視を行うモジュール。"""
 
 
 class MediaDeviceManager(QObject):
