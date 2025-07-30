@@ -60,3 +60,10 @@ class MediaDeviceManager(QObject):
             bytes(dev.id()).decode("utf-8", errors="ignore"): dev.description()
             for dev in self._camera_devices
         }
+
+    def camera_index_by_id(self, camera_id: str) -> int | None:
+        """指定したカメラIDに対応する現在のインデックスを返す。"""
+        for idx, dev in enumerate(self._camera_devices):
+            if bytes(dev.id()).decode("utf-8", errors="ignore") == camera_id:
+                return idx
+        return None
