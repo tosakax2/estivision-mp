@@ -1,8 +1,11 @@
 # estv/gui/camera_preview_window.py
 
-from PySide6.QtWidgets import QDialog, QVBoxLayout, QLabel, QPushButton
+from PySide6.QtWidgets import QDialog, QVBoxLayout, QLabel, QPushButton, QWidget
 from PySide6.QtCore import Qt
-from PySide6.QtGui import QPixmap
+from PySide6.QtGui import QPixmap, QImage, QCloseEvent
+from collections.abc import Callable
+
+from estv.devices.camera_stream_manager import CameraStreamManager
 
 from estv.gui.style_constants import TEXT_COLOR, BACKGROUND_COLOR
 
@@ -10,7 +13,13 @@ from estv.gui.style_constants import TEXT_COLOR, BACKGROUND_COLOR
 class CameraPreviewWindow(QDialog):
     """カメラのプレビューウィンドウ。"""
 
-    def __init__(self, camera_stream_manager, device_id=0, parent=None, on_closed=None):
+    def __init__(
+        self,
+        camera_stream_manager: CameraStreamManager,
+        device_id: int = 0,
+        parent: QWidget | None = None,
+        on_closed: Callable[[int], None] | None = None,
+    ) -> None:
         """コンストラクタ。"""
         super().__init__(parent)
         self.setWindowTitle("ESTV - カメラプレビュー")
@@ -45,7 +54,7 @@ class CameraPreviewWindow(QDialog):
         self.camera_stream_manager.q_image_ready.connect(self._on_image_ready)
 
 
-    def _on_image_ready(self, device_id, qimg):
+    def _on_image_ready(self, device_id: int, qimg: QImage) -> None:
         """カメラからの映像が準備できたときに呼び出される。"""
         if device_id != self.device_id:
             return
@@ -57,7 +66,7 @@ class CameraPreviewWindow(QDialog):
         ))
 
 
-    def closeEvent(self, event):
+    def closeEvent(self, event: QCloseEvent) -> None:
         """ウィンドウが閉じられたときの処理。"""
         self.camera_stream_manager.q_image_ready.disconnect(self._on_image_ready)
         self.camera_stream_manager.stop_camera(self.device_id)

@@ -5,7 +5,7 @@ from PySide6.QtWidgets import (
     QAbstractItemView, QLabel
 )
 from PySide6.QtCore import Qt
-from PySide6.QtGui import QColor
+from PySide6.QtGui import QColor, QCloseEvent
 
 from estv.devices.camera_stream_manager import CameraStreamManager
 from estv.devices.media_device_manager import MediaDeviceManager
@@ -129,13 +129,13 @@ class MainWindow(QMainWindow):
                 self._camera_stream_manager.stop_camera(device_id)
 
 
-    def _on_preview_closed(self, device_id: int):
+    def _on_preview_closed(self, device_id: int) -> None:
         """プレビューウィンドウが閉じられたとき呼ばれる。"""
         if device_id in self._preview_windows:
             del self._preview_windows[device_id]
 
 
-    def closeEvent(self, event) -> None:
+    def closeEvent(self, event: QCloseEvent) -> None:
         """ウィンドウが閉じられたときの処理。"""
         for preview in list(self._preview_windows.values()):
             preview.close()

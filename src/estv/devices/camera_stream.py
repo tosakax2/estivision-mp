@@ -3,6 +3,7 @@
 import time
 
 import cv2
+import numpy as np
 from PySide6.QtCore import QThread, Signal, Slot
 from PySide6.QtGui import QImage
 
@@ -12,7 +13,7 @@ MAX_LONG_SIDE_LENGTH = 640  # 長辺の最大サイズ
 CAPTURE_FPS = 30 # 最大フレームレート
 
 
-def resize_if_needed(frame, max_length):
+def resize_if_needed(frame: np.ndarray, max_length: int) -> np.ndarray:
     """長辺がmax_lengthを超える場合のみリサイズして返す。"""
     h, w = frame.shape[:2]
     if max(w, h) > max_length:
