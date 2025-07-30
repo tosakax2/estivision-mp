@@ -3,8 +3,8 @@
 
 from collections.abc import Callable
 import os
-import re
 from pathlib import Path
+import re
 
 import numpy as np
 from PySide6.QtWidgets import (
@@ -34,7 +34,7 @@ CALIB_CAPTURE_INTERVAL_MS = 500   # キャプチャ間隔 (ミリ秒)
 
 def _calib_file_path(device_id: str) -> str:
     """デバイスIDからキャリブレーションファイルパスを返す。"""
-    project_root = Path(__file__).resolve().parents[2]
+    project_root = Path(__file__).resolve().parents[3]
     data_dir = project_root / "data"
     data_dir.mkdir(exist_ok=True)
     safe_id = re.sub(r"[^A-Za-z0-9._-]", "_", device_id)

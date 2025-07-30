@@ -6,6 +6,11 @@ from reportlab.pdfgen import canvas
 from reportlab.lib.units import mm
 
 
+# --- 定数
+SCRIPT_DIR = Path(__file__).resolve().parent
+IMAGES_DIR = SCRIPT_DIR.parent / "images"
+
+
 def mm_to_px(mm: float, dpi: int) -> int:
     """mm → px 変換（dpi 指定）。四捨五入で整数化。"""
     return int(round(mm / 25.4 * dpi))
@@ -18,10 +23,10 @@ def main(
     square_size_mm: float = 20.0,        # 1 マスの一辺 (mm)
     dpi: int = 300,                      # 印刷解像度
     portrait: bool = True,              # True=縦向き, False=横向き
-    out_path: Path = Path("images/chessboard_A4_6x9.png"),
-    out_pdf: Path = Path("images/chessboard_A4_6x9.pdf"),
+    out_path: Path = IMAGES_DIR / "chessboard_A4_6x9.png",
+    out_pdf: Path = IMAGES_DIR / "chessboard_A4_6x9.pdf",
 ) -> tuple[int, int]:
-    """A4 サイズぴったりのキャンバス上にチェスボードを描画し PNG＆PDF保存。戻り値は (幅px, 高さpx)。"""
+    """A4 サイズぴったりのキャンバス上にチェスボードを描画し PNG&PDF保存。戻り値は (幅px, 高さpx)。"""
 
     # --- A4 キャンバスサイズ計算
     a4_w_mm, a4_h_mm = (210.0, 297.0) if portrait else (297.0, 210.0)
