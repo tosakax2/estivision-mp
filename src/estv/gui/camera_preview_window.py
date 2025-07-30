@@ -160,8 +160,14 @@ class CameraPreviewWindow(QDialog):
         # --- 十分な枚数集まったらキャリブレーション実行
         if len(self.calibrator.image_points) >= 20:
             try:
+                self.calibrator.calibrate(self._last_image.shape[:2])
                 self.calibration_done = True
-                self.status_label.setText(f"平均再投影誤差: {self.calibrator.reprojection_error:.3f}")
+                err = self.calibrator.reprojection_error
+                self.status_label.setStyleSheet(f"color: {TEXT_COLOR};")
+                if err is not None:
+                    self.status_label.setText(f"平均再投影誤差: {err:.3f}")
+                else:
+                    self.status_label.setText("平均再投影誤差: 計算不可")
 
                 # --- パラメータを保存
                 data_dir = os.path.join(os.path.dirname(__file__), "../../data")
@@ -191,7 +197,12 @@ class CameraPreviewWindow(QDialog):
     def _update_status_label(self) -> None:
         """キャリブレーション状態に応じてステータス表示を更新する。"""
         if self.calibration_done:
-            self.status_label.setText(f"平均再投影誤差: {self.calibrator.reprojection_error:.3f}")
+            err = self.calibrator.reprojection_error
+            self.status_label.setStyleSheet(f"color: {TEXT_COLOR};")
+            if err is not None:
+                self.status_label.setText(f"平均再投影誤差: {err:.3f}")
+            else:
+                self.status_label.setText("平均再投影誤差: 計算失敗")
         else:
             self.status_label.setStyleSheet(f"color: {WARNING_COLOR};")
             self.status_label.setText("キャリブレーションが必要です")
