@@ -1,16 +1,10 @@
 # estv/devices/camera_calibrator.py
 """カメラキャリブレーションに関連するクラスを提供するモジュール。"""
 
-from filelock import FileLock, Timeout
 from pathlib import Path
-import time
-import logging
 
 import cv2
 import numpy as np
-
-
-logger = logging.getLogger(__name__)
 
 
 class CameraCalibrator:
@@ -104,48 +98,21 @@ class CameraCalibrator:
         return self._reproj_error
 
 
-    def save(self, filename: str | Path, timeout: float = 10.0) -> None:
-        """キャリブレーション結果を ``.npz`` ファイルへ保存する（ファイルロック付き）。"""
+    def save(self, filename: str | Path) -> None:
+        """キャリブレーション結果を ``.npz`` ファイルへ保存する。"""
         if self._camera_matrix is None:
             raise ValueError("キャリブレーション未実施です。")
-        lock_path = str(filename) + ".lock"
-        lock = FileLock(lock_path, timeout=timeout)
-        try:
-            with lock:
-                # 一時ファイル書き込み + アトミックrename
-                tmp_path = str(filename) + ".tmp"
-                try:
-                    np.savez(
-                        tmp_path,
-                        camera_matrix=self._camera_matrix,
-                        dist_coeffs=self._dist_coeffs,
-                        reproj_error=self._reproj_error,
-                    )
-                    # Windowsでも上書きrename安全
-                    Path(tmp_path).replace(filename)
-                finally:
-                    if Path(tmp_path).exists():
-                        Path(tmp_path).unlink(missing_ok=True)
-        except Timeout:
-            raise RuntimeError(
-                f"キャリブレーションパラメータ保存時にロック獲得失敗: {filename}"
-            )
-        except Exception as e:
-            logger.exception("キャリブレーションパラメータ保存中にエラーが発生しました")
-            raise RuntimeError(
-                f"キャリブレーションパラメータ保存中にエラー発生: {e}"
-            ) from e
+        np.savez(
+            str(filename),
+            camera_matrix=self._camera_matrix,
+            dist_coeffs=self._dist_coeffs,
+            reproj_error=self._reproj_error,
+        )
 
 
-    def load(self, filename: str | Path, timeout: float = 10.0) -> None:
-        """``.npz`` ファイルからキャリブレーションパラメータを読み込む（ファイルロック付き）。"""
-        lock_path = str(filename) + ".lock"
-        lock = FileLock(lock_path, timeout=timeout)
-        try:
-            with lock:
-                data = np.load(str(filename))
-                self._camera_matrix = data["camera_matrix"]
-                self._dist_coeffs = data["dist_coeffs"]
-                self._reproj_error = float(data["reproj_error"]) if "reproj_error" in data else None
-        except Timeout:
-            raise RuntimeError(f"キャリブレーションパラメータ読込時にロック獲得失敗: {filename}")
+    def load(self, filename: str | Path) -> None:
+        """``.npz`` ファイルからキャリブレーションパラメータを読み込む。"""
+        data = np.load(str(filename))
+        self._camera_matrix = data["camera_matrix"]
+        self._dist_coeffs = data["dist_coeffs"]
+        self._reproj_error = float(data["reproj_error"]) if "reproj_error" in data else None
