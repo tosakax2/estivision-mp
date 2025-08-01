@@ -4,13 +4,9 @@
 from filelock import FileLock, Timeout
 from pathlib import Path
 import time
-import logging
 
 import cv2
 import numpy as np
-
-
-logger = logging.getLogger(__name__)
 
 
 class CameraCalibrator:
@@ -114,27 +110,14 @@ class CameraCalibrator:
             with lock:
                 # 一時ファイル書き込み + アトミックrename
                 tmp_path = str(filename) + ".tmp"
-                try:
-                    np.savez(
-                        tmp_path,
+                np.savez(tmp_path,
                         camera_matrix=self._camera_matrix,
                         dist_coeffs=self._dist_coeffs,
-                        reproj_error=self._reproj_error,
-                    )
-                    # Windowsでも上書きrename安全
-                    Path(tmp_path).replace(filename)
-                finally:
-                    if Path(tmp_path).exists():
-                        Path(tmp_path).unlink(missing_ok=True)
+                        reproj_error=self._reproj_error)
+                # Windowsでも上書きrename安全
+                Path(tmp_path).replace(filename)
         except Timeout:
-            raise RuntimeError(
-                f"キャリブレーションパラメータ保存時にロック獲得失敗: {filename}"
-            )
-        except Exception as e:
-            logger.exception("キャリブレーションパラメータ保存中にエラーが発生しました")
-            raise RuntimeError(
-                f"キャリブレーションパラメータ保存中にエラー発生: {e}"
-            ) from e
+            raise RuntimeError(f"キャリブレーションパラメータ保存時にロック獲得失敗: {filename}")
 
 
     def load(self, filename: str | Path, timeout: float = 10.0) -> None:
