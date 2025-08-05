@@ -113,13 +113,13 @@ class CameraPreviewWindow(QDialog):
         # --- カメラ設定読み込み
         settings_path = _settings_file_path(self.device_id)
         self._exposure_value = 0
-        self._gain_value = 0
+        self._brightness_value = 0
         if os.path.exists(settings_path):
             try:
                 with open(settings_path, "r", encoding="utf-8") as f:
                     data = json.load(f)
                     self._exposure_value = int(data.get("exposure", 0))
-                    self._gain_value = int(data.get("gain", 0))
+                    self._brightness_value = int(data.get("brightness", 0))
             except Exception as e:
                 print(f"カメラ設定読み込み失敗: {e}")
 
@@ -150,11 +150,11 @@ class CameraPreviewWindow(QDialog):
         self.exposure_slider.setFixedWidth(480)
         self.exposure_slider.valueChanged.connect(self._on_exposure_changed)
 
-        self.gain_slider = QSlider(Qt.Orientation.Horizontal)
-        self.gain_slider.setRange(0, 100)
-        self.gain_slider.setValue(self._gain_value)
-        self.gain_slider.setFixedWidth(480)
-        self.gain_slider.valueChanged.connect(self._on_gain_changed)
+        self.brightness_slider = QSlider(Qt.Orientation.Horizontal)
+        self.brightness_slider.setRange(0, 100)
+        self.brightness_slider.setValue(self._brightness_value)
+        self.brightness_slider.setFixedWidth(480)
+        self.brightness_slider.valueChanged.connect(self._on_brightness_changed)
 
         self.calib_button = QPushButton("キャリブレーション開始")
         self.calib_button.setCheckable(True)
@@ -168,8 +168,8 @@ class CameraPreviewWindow(QDialog):
         layout.addWidget(self.progress_bar, alignment=Qt.AlignmentFlag.AlignCenter)
         layout.addWidget(QLabel("露出"), alignment=Qt.AlignmentFlag.AlignCenter)
         layout.addWidget(self.exposure_slider, alignment=Qt.AlignmentFlag.AlignCenter)
-        layout.addWidget(QLabel("ゲイン"), alignment=Qt.AlignmentFlag.AlignCenter)
-        layout.addWidget(self.gain_slider, alignment=Qt.AlignmentFlag.AlignCenter)
+        layout.addWidget(QLabel("明るさ"), alignment=Qt.AlignmentFlag.AlignCenter)
+        layout.addWidget(self.brightness_slider, alignment=Qt.AlignmentFlag.AlignCenter)
         layout.addWidget(self.calib_button, alignment=Qt.AlignmentFlag.AlignCenter)
         self.setLayout(layout)
         self.adjustSize()
@@ -181,7 +181,7 @@ class CameraPreviewWindow(QDialog):
         self.camera_stream_manager.frame_ready.connect(self._on_frame_ready)
 
         self.camera_stream_manager.set_exposure(self.device_id, self._exposure_value)
-        self.camera_stream_manager.set_gain(self.device_id, self._gain_value)
+        self.camera_stream_manager.set_brightness(self.device_id, self._brightness_value)
         
         # --- キャリブ用タイマー
         self._calib_timer = QTimer(self)
@@ -224,18 +224,18 @@ class CameraPreviewWindow(QDialog):
         self._save_settings()
 
 
-    def _on_gain_changed(self, value: int) -> None:
-        """ゲインスライダー変更時にカメラへ反映し設定を保存する。"""
-        self.camera_stream_manager.set_gain(self.device_id, float(value))
+    def _on_brightness_changed(self, value: int) -> None:
+        """明るさスライダー変更時にカメラへ反映し設定を保存する。"""
+        self.camera_stream_manager.set_brightness(self.device_id, float(value))
         self._save_settings()
 
 
     def _save_settings(self) -> None:
-        """現在の露出とゲインをデバイスごとに保存する。"""
+        """現在の露出と明るさ補正をデバイスごとに保存する。"""
         settings_path = _settings_file_path(self.device_id)
         data = {
             "exposure": int(self.exposure_slider.value()),
-            "gain": int(self.gain_slider.value()),
+            "brightness": int(self.brightness_slider.value()),
         }
         try:
             with open(settings_path, "w", encoding="utf-8") as f:
