@@ -17,13 +17,10 @@ POINT_COLOR = (255, 255, 255)   # ポイントの色（BGR）
 POINT_EDGE_COLOR = (0, 0, 0)    # ポイントの外枠の色（BGR）
 POINT_EDGE_THICKNESS = 3        # ポイントの外枠の太さ
 
-VISIBILITY_TH = 0.5             # 可視性閾値
-
 
 def draw_pose_landmarks(
     image: np.ndarray,
-    landmarks: list[PoseLandmark],
-    visibility_th: float = VISIBILITY_TH
+    landmarks: list[PoseLandmark]
 ) -> np.ndarray:
     """画像にMediaPipe Pose骨格を描画して返す。"""
 
@@ -35,7 +32,7 @@ def draw_pose_landmarks(
 
     # キーポイントのピクセル座標化
     points = [
-        (int(lm.x * w), int(lm.y * h)) if lm.visibility >= visibility_th else None
+        (int(lm.x * w), int(lm.y * h))
         for lm in landmarks
     ]
 

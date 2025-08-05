@@ -21,7 +21,7 @@ class PoseLandmark:
 class PoseEstimator:
     """MediaPipe Poseを用いた姿勢推定モジュール（CPU動作）"""
 
-    def __init__(self, min_detection_confidence: float = 0.5, min_tracking_confidence: float = 0.5) -> None:
+    def __init__(self, min_detection_confidence: float = 0.5, min_tracking_confidence: float = 0.5, visibility_th: float = 0.5) -> None:
         self.mp_pose = mp.solutions.pose
         self.pose = self.mp_pose.Pose(
             static_image_mode=False,
@@ -30,6 +30,7 @@ class PoseEstimator:
             min_detection_confidence=min_detection_confidence,
             min_tracking_confidence=min_tracking_confidence
         )
+        self.visibility_th = visibility_th
 
 
     def estimate(self, frame: np.ndarray) -> list[PoseLandmark]:
