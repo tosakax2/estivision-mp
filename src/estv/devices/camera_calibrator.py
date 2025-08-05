@@ -4,6 +4,7 @@
 from pathlib import Path
 
 import cv2
+from filelock import FileLock
 import numpy as np
 
 
@@ -99,20 +100,22 @@ class CameraCalibrator:
 
 
     def save(self, filename: str | Path) -> None:
-        """キャリブレーション結果を ``.npz`` ファイルへ保存する。"""
         if self._camera_matrix is None:
             raise ValueError("キャリブレーション未実施です。")
-        np.savez(
-            str(filename),
-            camera_matrix=self._camera_matrix,
-            dist_coeffs=self._dist_coeffs,
-            reproj_error=self._reproj_error,
-        )
+        lock_path = str(filename) + ".lock"
+        with FileLock(lock_path):
+            np.savez(
+                str(filename),
+                camera_matrix=self._camera_matrix,
+                dist_coeffs=self._dist_coeffs,
+                reproj_error=self._reproj_error,
+            )
 
 
     def load(self, filename: str | Path) -> None:
-        """``.npz`` ファイルからキャリブレーションパラメータを読み込む。"""
-        data = np.load(str(filename))
-        self._camera_matrix = data["camera_matrix"]
-        self._dist_coeffs = data["dist_coeffs"]
-        self._reproj_error = float(data["reproj_error"]) if "reproj_error" in data else None
+        lock_path = str(filename) + ".lock"
+        with FileLock(lock_path):
+            data = np.load(str(filename))
+            self._camera_matrix = data["camera_matrix"]
+            self._dist_coeffs = data["dist_coeffs"]
+            self._reproj_error = float(data["reproj_error"]) if "reproj_error" in data else None

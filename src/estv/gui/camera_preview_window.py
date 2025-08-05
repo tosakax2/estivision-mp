@@ -2,6 +2,7 @@
 """カメラプレビュー表示およびキャリブレーションを行うウィンドウ。"""
 
 from collections.abc import Callable
+from filelock import FileLock
 import json
 import os
 from pathlib import Path
@@ -99,14 +100,16 @@ class CameraPreviewWindow(QDialog):
 
         # --- カメラ設定読み込み
         settings_path = _settings_file_path(self.device_id)
-        self._exposure_value = 0
+        self._exposure_value = -7
         self._brightness_value = 0
         if os.path.exists(settings_path):
+            lock_path = settings_path + ".lock"
             try:
-                with open(settings_path, "r", encoding="utf-8") as f:
-                    data = json.load(f)
-                    self._exposure_value = int(data.get("exposure", 0))
-                    self._brightness_value = int(data.get("brightness", 0))
+                with FileLock(lock_path):
+                    with open(settings_path, "r", encoding="utf-8") as f:
+                        data = json.load(f)
+                self._exposure_value = int(data.get("exposure", 0))
+                self._brightness_value = int(data.get("brightness", 0))
             except Exception as e:
                 print(f"カメラ設定読み込み失敗: {e}")
 
@@ -250,13 +253,15 @@ class CameraPreviewWindow(QDialog):
     def _save_settings(self) -> None:
         """現在の露出と明るさ補正をデバイスごとに保存する。"""
         settings_path = _settings_file_path(self.device_id)
+        lock_path = settings_path + ".lock"
         data = {
             "exposure": int(self.exposure_slider.value()),
             "brightness": int(self.brightness_slider.value()),
         }
         try:
-            with open(settings_path, "w", encoding="utf-8") as f:
-                json.dump(data, f)
+            with FileLock(lock_path):
+                with open(settings_path, "w", encoding="utf-8") as f:
+                    json.dump(data, f)
         except Exception as e:
             print(f"カメラ設定保存失敗: {e}")
 
