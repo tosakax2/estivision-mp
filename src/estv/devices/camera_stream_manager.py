@@ -87,6 +87,22 @@ class CameraStreamManager(QObject):
         self.cleanup_stream(camera_id)
 
 
+    def set_exposure(self, camera_id: str, value: float) -> None:
+        """指定カメラの露出を設定する。"""
+        with self._lock:
+            stream = self._streams.get(camera_id)
+        if stream is not None:
+            stream.set_exposure(value)
+
+
+    def set_gain(self, camera_id: str, value: float) -> None:
+        """指定カメラのゲインを設定する。"""
+        with self._lock:
+            stream = self._streams.get(camera_id)
+        if stream is not None:
+            stream.set_gain(value)
+
+
     def stop_all(self) -> None:
         """実行中のすべてのカメラストリームを停止する。"""
         for camera_id in self.running_device_ids():
