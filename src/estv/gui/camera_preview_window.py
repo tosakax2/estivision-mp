@@ -98,19 +98,6 @@ class CameraPreviewWindow(QDialog):
         self._frame_count = 0
         self._last_image = None
 
-        # --- キャリブレーションパラメータ自動ロード
-        calib_path = _calib_file_path(self.device_id)
-        if os.path.exists(calib_path):
-            try:
-                self.calibrator.load(calib_path)
-                self.calibration_done = True
-                self.progress_bar_value_on_load = True
-            except Exception as e:
-                print(f"キャリブレーションパラメータ読み込み失敗: {e}")
-                self.progress_bar_value_on_load = False
-        else:
-            self.progress_bar_value_on_load = False
-
         # --- カメラ設定読み込み
         settings_path = _settings_file_path(self.device_id)
         self._exposure_value = 0
@@ -199,6 +186,20 @@ class CameraPreviewWindow(QDialog):
 
         self.camera_stream_manager.set_exposure(self.device_id, self._exposure_value)
         self.camera_stream_manager.set_brightness(self.device_id, self._brightness_value)
+
+        # --- キャリブレーションパラメータ自動ロード
+        calib_path = _calib_file_path(self.device_id)
+        if os.path.exists(calib_path):
+            try:
+                self.calibrator.load(calib_path)
+                self.calibration_done = True
+                self.progress_bar_value_on_load = True
+                self.progress_bar.setValue(self.progress_bar.maximum())
+            except Exception as e:
+                print(f"キャリブレーションパラメータ読み込み失敗: {e}")
+                self.progress_bar_value_on_load = False
+        else:
+            self.progress_bar_value_on_load = False
         
         # --- キャリブ用タイマー
         self._calib_timer = QTimer(self)
