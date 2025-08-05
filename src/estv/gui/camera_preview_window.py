@@ -86,7 +86,7 @@ class CameraPreviewWindow(QDialog):
             ウィンドウ閉鎖時に ``device_id`` を引数に呼び出されるコールバック。
         """
         super().__init__(parent)
-        self.setWindowTitle("ESTV - カメラプレビュー")
+        self.setWindowTitle("ESTV - Camera Preview")
         self.device_id = device_id
         self.camera_stream_manager = camera_stream_manager
         self._on_closed = on_closed

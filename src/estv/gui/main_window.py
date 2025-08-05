@@ -56,8 +56,16 @@ class MainWindow(QMainWindow):
         self.camera_table.setColumnWidth(3, 120)  # 操作（トグルボタン）
         self.camera_table.setFixedSize(480, 200)
         self.camera_table.setStyleSheet("""
+            QTableWidget::item {
+                background: transparent;
+            }
             QTableWidget::item:hover {
                 background: transparent;
+                color: auto;
+            }
+            QTableWidget::item:selected {
+                background: transparent;
+                color: auto;
             }
         """)
 
