@@ -5,6 +5,7 @@ from collections.abc import Callable
 import json
 import os
 from pathlib import Path
+import re
 import sys
 
 import numpy as np
@@ -50,14 +51,12 @@ def _get_data_dir() -> Path:
 
 def _calib_file_path(device_id: str) -> str:
     """デバイスIDからキャリブレーションファイルパスを返す（exe対応）"""
-    import re
     safe_id = re.sub(r"[^A-Za-z0-9._-]", "_", device_id)
     return str(_get_data_dir() / f"calib_{safe_id}.npz")
 
 
 def _settings_file_path(device_id: str) -> str:
     """デバイスIDごとのカメラ設定ファイルパスを返す。"""
-    import re
     safe_id = re.sub(r"[^A-Za-z0-9._-]", "_", device_id)
     return str(_get_data_dir() / f"settings_{safe_id}.json")
 

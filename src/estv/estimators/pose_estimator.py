@@ -1,4 +1,4 @@
-# estv/estimators/pose_estimators.py
+# estv/estimators/pose_estimator.py
 
 import mediapipe as mp
 import numpy as np
