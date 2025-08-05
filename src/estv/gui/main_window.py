@@ -51,9 +51,9 @@ class MainWindow(QMainWindow):
         self.camera_table.horizontalHeader().setStretchLastSection(True)
         self.camera_table.verticalHeader().setVisible(False)
         self.camera_table.setColumnWidth(0, 40)   # ID
-        self.camera_table.setColumnWidth(1, 200)  # 名前
+        self.camera_table.setColumnWidth(1, 240)  # 名前
         self.camera_table.setColumnWidth(2, 60)   # 状態
-        self.camera_table.setColumnWidth(3, 80)   # 操作（トグルボタン）
+        self.camera_table.setColumnWidth(3, 120)  # 操作（トグルボタン）
         self.camera_table.setFixedSize(480, 200)
         self.camera_table.setStyleSheet("""
             QTableWidget::item:hover {
