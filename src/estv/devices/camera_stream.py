@@ -58,7 +58,7 @@ class CameraStream(QThread):
 
     def run(self) -> None:
         """スレッド開始時に実行されるメインのキャプチャループ。"""
-        cap = cv2.VideoCapture(self._device_id, cv2.CAP_DSHOW)
+        cap = cv2.VideoCapture(self._device_id, cv2.CAP_ANY)
         self._cap = cap
 
         try:
