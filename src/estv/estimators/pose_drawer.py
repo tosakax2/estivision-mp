@@ -20,7 +20,7 @@ POINT_EDGE_THICKNESS = 3        # ポイントの外枠の太さ
 
 def draw_pose_landmarks(
     image: np.ndarray,
-    landmarks: list[PoseLandmark]
+    landmarks: list[PoseLandmark | None]
 ) -> np.ndarray:
     """画像にMediaPipe Pose骨格を描画して返す。"""
 
@@ -32,7 +32,7 @@ def draw_pose_landmarks(
 
     # キーポイントのピクセル座標化
     points = [
-        (int(lm.x * w), int(lm.y * h))
+        (int(lm.x * w), int(lm.y * h)) if lm is not None else None
         for lm in landmarks
     ]
 

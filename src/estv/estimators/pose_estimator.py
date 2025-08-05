@@ -21,7 +21,7 @@ class PoseLandmark:
 class PoseEstimator:
     """MediaPipe Poseを用いた姿勢推定モジュール（CPU動作）"""
 
-    def __init__(self, min_detection_confidence: float = 0.5, min_tracking_confidence: float = 0.5, visibility_th: float = 0.5) -> None:
+    def __init__(self, min_detection_confidence: float = 0.5, min_tracking_confidence: float = 0.5, visibility_th: float = 0.05) -> None:
         self.mp_pose = mp.solutions.pose
         self.pose = self.mp_pose.Pose(
             static_image_mode=False,
@@ -33,7 +33,7 @@ class PoseEstimator:
         self.visibility_th = visibility_th
 
 
-    def estimate(self, frame: np.ndarray) -> list[PoseLandmark]:
+    def estimate(self, frame: np.ndarray) -> list[PoseLandmark | None]:
         """BGR画像（np.ndarray）を受け取り、ランドマーク情報リストを返す"""
         # MediaPipeはRGB入力が必要
         image_rgb = frame[..., ::-1]
@@ -46,9 +46,10 @@ class PoseEstimator:
 
         landmarks = []
         for lm in results.pose_landmarks.landmark:
-            landmarks.append(
-                PoseLandmark(lm.x, lm.y, lm.z, lm.visibility)
-            )
+            if lm.visibility >= self.visibility_th:
+                landmarks.append(PoseLandmark(lm.x, lm.y, lm.z, lm.visibility))
+            else:
+                landmarks.append(None)  # Noneで埋めて部位順維持
         return landmarks
 
 
