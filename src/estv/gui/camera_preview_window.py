@@ -2,6 +2,7 @@
 """カメラプレビュー表示およびキャリブレーションを行うウィンドウ。"""
 
 from collections.abc import Callable
+import json
 import os
 from pathlib import Path
 import sys
@@ -14,6 +15,7 @@ from PySide6.QtWidgets import (
     QPushButton,
     QWidget,
     QProgressBar,
+    QSlider,
 )
 from PySide6.QtCore import Qt, QTimer
 from PySide6.QtGui import QPixmap, QImage, QCloseEvent
@@ -50,6 +52,13 @@ def _calib_file_path(device_id: str) -> str:
     import re
     safe_id = re.sub(r"[^A-Za-z0-9._-]", "_", device_id)
     return str(_get_data_dir() / f"calib_{safe_id}.npz")
+
+
+def _settings_file_path(device_id: str) -> str:
+    """デバイスIDごとのカメラ設定ファイルパスを返す。"""
+    import re
+    safe_id = re.sub(r"[^A-Za-z0-9._-]", "_", device_id)
+    return str(_get_data_dir() / f"settings_{safe_id}.json")
 
 
 class CameraPreviewWindow(QDialog):
@@ -101,6 +110,19 @@ class CameraPreviewWindow(QDialog):
         else:
             self.progress_bar_value_on_load = False
 
+        # --- カメラ設定読み込み
+        settings_path = _settings_file_path(self.device_id)
+        self._exposure_value = 0
+        self._gain_value = 0
+        if os.path.exists(settings_path):
+            try:
+                with open(settings_path, "r", encoding="utf-8") as f:
+                    data = json.load(f)
+                    self._exposure_value = int(data.get("exposure", 0))
+                    self._gain_value = int(data.get("gain", 0))
+            except Exception as e:
+                print(f"カメラ設定読み込み失敗: {e}")
+
         # --- UI構成
         self.image_label = QLabel("カメラ映像がここに表示されます")
         self.image_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
@@ -122,6 +144,18 @@ class CameraPreviewWindow(QDialog):
         if self.progress_bar_value_on_load:
             self.progress_bar.setValue(self.progress_bar.maximum())
 
+        self.exposure_slider = QSlider(Qt.Orientation.Horizontal)
+        self.exposure_slider.setRange(-13, -1)
+        self.exposure_slider.setValue(self._exposure_value)
+        self.exposure_slider.setFixedWidth(480)
+        self.exposure_slider.valueChanged.connect(self._on_exposure_changed)
+
+        self.gain_slider = QSlider(Qt.Orientation.Horizontal)
+        self.gain_slider.setRange(0, 100)
+        self.gain_slider.setValue(self._gain_value)
+        self.gain_slider.setFixedWidth(480)
+        self.gain_slider.valueChanged.connect(self._on_gain_changed)
+
         self.calib_button = QPushButton("キャリブレーション開始")
         self.calib_button.setCheckable(True)
         self.calib_button.setStyleSheet("padding: 6px 18px;")
@@ -132,6 +166,10 @@ class CameraPreviewWindow(QDialog):
         layout.addWidget(self.image_label, alignment=Qt.AlignmentFlag.AlignCenter)
         layout.addWidget(self.status_label, alignment=Qt.AlignmentFlag.AlignCenter)
         layout.addWidget(self.progress_bar, alignment=Qt.AlignmentFlag.AlignCenter)
+        layout.addWidget(QLabel("露出"), alignment=Qt.AlignmentFlag.AlignCenter)
+        layout.addWidget(self.exposure_slider, alignment=Qt.AlignmentFlag.AlignCenter)
+        layout.addWidget(QLabel("ゲイン"), alignment=Qt.AlignmentFlag.AlignCenter)
+        layout.addWidget(self.gain_slider, alignment=Qt.AlignmentFlag.AlignCenter)
         layout.addWidget(self.calib_button, alignment=Qt.AlignmentFlag.AlignCenter)
         self.setLayout(layout)
         self.adjustSize()
@@ -141,6 +179,9 @@ class CameraPreviewWindow(QDialog):
         self._on_image_ready_slot = lambda cid, img: self._on_image_ready(cid, img)
         self.camera_stream_manager.q_image_ready.connect(self._on_image_ready_slot)
         self.camera_stream_manager.frame_ready.connect(self._on_frame_ready)
+
+        self.camera_stream_manager.set_exposure(self.device_id, self._exposure_value)
+        self.camera_stream_manager.set_gain(self.device_id, self._gain_value)
         
         # --- キャリブ用タイマー
         self._calib_timer = QTimer(self)
@@ -175,6 +216,32 @@ class CameraPreviewWindow(QDialog):
         """キャリブレーション用に最新フレームを保持する。"""
         if device_id == self.device_id:
             self._last_image = frame
+
+
+    def _on_exposure_changed(self, value: int) -> None:
+        """露出スライダー変更時にカメラへ反映し設定を保存する。"""
+        self.camera_stream_manager.set_exposure(self.device_id, float(value))
+        self._save_settings()
+
+
+    def _on_gain_changed(self, value: int) -> None:
+        """ゲインスライダー変更時にカメラへ反映し設定を保存する。"""
+        self.camera_stream_manager.set_gain(self.device_id, float(value))
+        self._save_settings()
+
+
+    def _save_settings(self) -> None:
+        """現在の露出とゲインをデバイスごとに保存する。"""
+        settings_path = _settings_file_path(self.device_id)
+        data = {
+            "exposure": int(self.exposure_slider.value()),
+            "gain": int(self.gain_slider.value()),
+        }
+        try:
+            with open(settings_path, "w", encoding="utf-8") as f:
+                json.dump(data, f)
+        except Exception as e:
+            print(f"カメラ設定保存失敗: {e}")
 
 
     def _on_calib_toggle(self, checked: bool) -> None:
@@ -272,6 +339,7 @@ class CameraPreviewWindow(QDialog):
         self.camera_stream_manager.q_image_ready.disconnect(self._on_image_ready_slot)
         self.camera_stream_manager.frame_ready.disconnect(self._on_frame_ready)
         self.camera_stream_manager.stop_camera(self.device_id)
+        self._save_settings()
         if self._on_closed:
             self._on_closed(self.device_id)
         super().closeEvent(event)

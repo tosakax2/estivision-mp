@@ -51,11 +51,15 @@ class CameraStream(QThread):
 
         # --- 引数保持
         self._device_id: int = device_id
+        self._cap: cv2.VideoCapture | None = None
+        self._pending_exposure: float | None = None
+        self._pending_gain: float | None = None
 
 
     def run(self) -> None:
         """スレッド開始時に実行されるメインのキャプチャループ。"""
         cap = cv2.VideoCapture(self._device_id, cv2.CAP_DSHOW)
+        self._cap = cap
 
         try:
             if not cap.isOpened():
@@ -72,6 +76,11 @@ class CameraStream(QThread):
             cap.set(cv2.CAP_PROP_FRAME_WIDTH, target_w)
             cap.set(cv2.CAP_PROP_FRAME_HEIGHT, target_h)
             cap.set(cv2.CAP_PROP_FPS, CAPTURE_FPS)
+
+            if self._pending_exposure is not None:
+                cap.set(cv2.CAP_PROP_EXPOSURE, self._pending_exposure)
+            if self._pending_gain is not None:
+                cap.set(cv2.CAP_PROP_GAIN, self._pending_gain)
 
             # --- 映像取得ループ
             interval = 1.0 / CAPTURE_FPS  # 1フレームの理想間隔（秒）
@@ -101,9 +110,26 @@ class CameraStream(QThread):
                     time.sleep(sleep_time)
         finally:
             cap.release() # カメラを解放
+            self._cap = None
 
 
     @Slot()
     def stop(self) -> None:
         """キャプチャループの終了をリクエストする。"""
         self.requestInterruption()
+
+
+    @Slot(float)
+    def set_exposure(self, value: float) -> None:
+        """露出値を設定する。"""
+        self._pending_exposure = value
+        if self._cap is not None:
+            self._cap.set(cv2.CAP_PROP_EXPOSURE, value)
+
+
+    @Slot(float)
+    def set_gain(self, value: float) -> None:
+        """ゲイン値を設定する。"""
+        self._pending_gain = value
+        if self._cap is not None:
+            self._cap.set(cv2.CAP_PROP_GAIN, value)
