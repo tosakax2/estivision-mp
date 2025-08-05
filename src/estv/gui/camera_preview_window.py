@@ -11,6 +11,7 @@ import numpy as np
 from PySide6.QtWidgets import (
     QDialog,
     QVBoxLayout,
+    QGroupBox,
     QLabel,
     QPushButton,
     QWidget,
@@ -124,6 +125,7 @@ class CameraPreviewWindow(QDialog):
                 print(f"カメラ設定読み込み失敗: {e}")
 
         # --- UI構成
+        # --- Preview グループ
         self.image_label = QLabel("カメラ映像がここに表示されます")
         self.image_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.image_label.setStyleSheet(f"""
@@ -132,7 +134,12 @@ class CameraPreviewWindow(QDialog):
             color: {TEXT_COLOR};
         """)
         self.image_label.setFixedSize(480, 480)
+        preview_group = QGroupBox("Preview")
+        preview_layout = QVBoxLayout()
+        preview_layout.addWidget(self.image_label)
+        preview_group.setLayout(preview_layout)
 
+        # --- Calibration グループ
         self.status_label = QLabel()
         self.status_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
 
@@ -141,9 +148,21 @@ class CameraPreviewWindow(QDialog):
         self.progress_bar.setValue(0)
         self.progress_bar.setFormat("%v / %m 枚")
         self.progress_bar.setFixedWidth(480)
-        if self.progress_bar_value_on_load:
-            self.progress_bar.setValue(self.progress_bar.maximum())
 
+        self.calib_button = QPushButton("キャリブレーション開始")
+        self.calib_button.setCheckable(True)
+        self.calib_button.setStyleSheet("padding: 6px 18px;")
+        self.calib_button.setFixedWidth(480)
+        self.calib_button.clicked.connect(self._on_calib_toggle)
+
+        calib_group = QGroupBox("Calibration")
+        calib_layout = QVBoxLayout()
+        calib_layout.addWidget(self.status_label)
+        calib_layout.addWidget(self.progress_bar)
+        calib_layout.addWidget(self.calib_button)
+        calib_group.setLayout(calib_layout)
+
+        # --- Config グループ
         self.exposure_slider = QSlider(Qt.Orientation.Horizontal)
         self.exposure_slider.setRange(-13, -1)
         self.exposure_slider.setValue(self._exposure_value)
@@ -156,21 +175,19 @@ class CameraPreviewWindow(QDialog):
         self.brightness_slider.setFixedWidth(480)
         self.brightness_slider.valueChanged.connect(self._on_brightness_changed)
 
-        self.calib_button = QPushButton("キャリブレーション開始")
-        self.calib_button.setCheckable(True)
-        self.calib_button.setStyleSheet("padding: 6px 18px;")
-        self.calib_button.setFixedWidth(480)
-        self.calib_button.clicked.connect(self._on_calib_toggle)
+        config_group = QGroupBox("Config")
+        config_layout = QVBoxLayout()
+        config_layout.addWidget(QLabel("露出"))
+        config_layout.addWidget(self.exposure_slider)
+        config_layout.addWidget(QLabel("明るさ"))
+        config_layout.addWidget(self.brightness_slider)
+        config_group.setLayout(config_layout)
 
+        # --- 全体レイアウト
         layout = QVBoxLayout()
-        layout.addWidget(self.image_label, alignment=Qt.AlignmentFlag.AlignCenter)
-        layout.addWidget(self.status_label, alignment=Qt.AlignmentFlag.AlignCenter)
-        layout.addWidget(self.progress_bar, alignment=Qt.AlignmentFlag.AlignCenter)
-        layout.addWidget(QLabel("露出"), alignment=Qt.AlignmentFlag.AlignCenter)
-        layout.addWidget(self.exposure_slider, alignment=Qt.AlignmentFlag.AlignCenter)
-        layout.addWidget(QLabel("明るさ"), alignment=Qt.AlignmentFlag.AlignCenter)
-        layout.addWidget(self.brightness_slider, alignment=Qt.AlignmentFlag.AlignCenter)
-        layout.addWidget(self.calib_button, alignment=Qt.AlignmentFlag.AlignCenter)
+        layout.addWidget(preview_group)
+        layout.addWidget(calib_group)
+        layout.addWidget(config_group)
         self.setLayout(layout)
         self.adjustSize()
         self.setFixedSize(self.size())
