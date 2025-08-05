@@ -95,12 +95,12 @@ class CameraStreamManager(QObject):
             stream.set_exposure(value)
 
 
-    def set_gain(self, camera_id: str, value: float) -> None:
-        """指定カメラのゲインを設定する。"""
+    def set_brightness(self, camera_id: str, value: float) -> None:
+        """指定カメラのソフトウェア明るさ補正を設定する。"""
         with self._lock:
             stream = self._streams.get(camera_id)
         if stream is not None:
-            stream.set_gain(value)
+            stream.set_brightness(value)
 
 
     def stop_all(self) -> None:

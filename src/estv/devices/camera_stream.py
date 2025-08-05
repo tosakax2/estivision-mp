@@ -53,7 +53,8 @@ class CameraStream(QThread):
         self._device_id: int = device_id
         self._cap: cv2.VideoCapture | None = None
         self._pending_exposure: float | None = None
-        self._pending_gain: float | None = None
+        # --- ソフトウェア明るさ補正値 (0-100)
+        self._brightness: float = 0.0
 
 
     def run(self) -> None:
@@ -79,8 +80,6 @@ class CameraStream(QThread):
 
             if self._pending_exposure is not None:
                 cap.set(cv2.CAP_PROP_EXPOSURE, self._pending_exposure)
-            if self._pending_gain is not None:
-                cap.set(cv2.CAP_PROP_GAIN, self._pending_gain)
 
             # --- 映像取得ループ
             interval = 1.0 / CAPTURE_FPS  # 1フレームの理想間隔（秒）
@@ -93,6 +92,11 @@ class CameraStream(QThread):
 
                 # --- 必要ならリサイズ
                 frame = resize_if_needed(frame, MAX_LONG_SIDE_LENGTH)
+
+                # --- 明るさ補正
+                if self._brightness != 0:
+                    factor = 1.0 + self._brightness / 100.0
+                    frame = cv2.convertScaleAbs(frame, alpha=factor, beta=0)
 
                 # --- OpenCVのBGRからQtのRGBに変換
                 rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
@@ -128,8 +132,6 @@ class CameraStream(QThread):
 
 
     @Slot(float)
-    def set_gain(self, value: float) -> None:
-        """ゲイン値を設定する。"""
-        self._pending_gain = value
-        if self._cap is not None:
-            self._cap.set(cv2.CAP_PROP_GAIN, value)
+    def set_brightness(self, value: float) -> None:
+        """ソフトウェアで適用する明るさ補正値を設定する。"""
+        self._brightness = value
