@@ -1,5 +1,7 @@
 # ESTiVision-MP
 
+![CI](https://github.com/tosakax2/estivision-mp/actions/workflows/ci.yml/badge.svg)
+
 **ESTiVision-MP** は、Web カメラと MediaPipe を用いて VR 用仮想トラッカーを生成するための GUI アプリケーションです。現在開発中です。
 
 ## 特徴
