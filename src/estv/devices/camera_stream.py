@@ -98,8 +98,8 @@ class CameraStream(QThread):
                     factor = 1.0 + self._brightness / 100.0
                     frame = cv2.convertScaleAbs(frame, alpha=factor, beta=0)
 
-                # --- スパックルノイズ除去
-                frame = cv2.medianBlur(frame, 3)
+                # --- ルミナンスノイズ除去
+                frame = cv2.GaussianBlur(frame, (3, 3), 0)
 
                 # --- OpenCVのBGRからQtのRGBに変換
                 rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
