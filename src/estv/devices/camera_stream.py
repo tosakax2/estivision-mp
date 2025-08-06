@@ -10,7 +10,7 @@ from PySide6.QtGui import QImage
 
 # --- 定数
 MAX_LONG_SIDE_LENGTH = 320  # 長辺の最大サイズ
-CAPTURE_FPS = 24 # 最大フレームレート
+CAPTURE_FPS = 30 # 最大フレームレート
 
 
 def resize_if_needed(frame: np.ndarray, max_length: int) -> np.ndarray:
@@ -83,9 +83,14 @@ class CameraStream(QThread):
 
             # --- 映像取得ループ
             interval = 1.0 / CAPTURE_FPS  # 1フレームの理想間隔（秒）
+            next_frame_time = time.perf_counter()
             while not self.isInterruptionRequested():
-                start_time = time.perf_counter()
+                now = time.perf_counter()
+                if now < next_frame_time:
+                    time.sleep(next_frame_time - now)
+                next_frame_time += interval
 
+                # --- 実フレーム取得
                 ret, frame = cap.read()
                 if not ret:
                     break
@@ -104,19 +109,15 @@ class CameraStream(QThread):
                 # --- OpenCVのBGRからQtのRGBに変換
                 rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
                 h, w, _ = rgb.shape
-                qimg = QImage(rgb.data, w, h, 3 * w, QImage.Format.Format_RGB888).copy()
+                qimg = QImage(
+                    rgb.data, w, h, 3 * w, QImage.Format.Format_RGB888
+                ).copy()
 
                 # --- シグナルを発行
                 self.frame_ready.emit(frame)
                 self.q_image_ready.emit(qimg)
-
-                # --- FPS制御
-                elapsed = time.perf_counter() - start_time
-                sleep_time = interval - elapsed
-                if sleep_time > 0:
-                    time.sleep(sleep_time)
         finally:
-            cap.release() # カメラを解放
+            cap.release()
             self._cap = None
 
 
