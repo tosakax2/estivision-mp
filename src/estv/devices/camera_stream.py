@@ -9,8 +9,8 @@ from PySide6.QtGui import QImage
 
 
 # --- 定数
-MAX_LONG_SIDE_LENGTH = 640  # 長辺の最大サイズ
-CAPTURE_FPS = 30 # 最大フレームレート
+MAX_LONG_SIDE_LENGTH = 320  # 長辺の最大サイズ
+CAPTURE_FPS = 24 # 最大フレームレート
 
 
 def resize_if_needed(frame: np.ndarray, max_length: int) -> np.ndarray:
