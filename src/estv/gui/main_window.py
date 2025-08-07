@@ -137,12 +137,6 @@ class MainWindow(QMainWindow):
         # --- 推定中は新しいカメラを起動させない
         if checked and not self._launch_enabled:
             return  # 起動要求を無視
-        if self._estimation_active:
-            QMessageBox.warning(
-                self, "操作できません",
-                "このカメラは姿勢推定を実行中です。\n先に姿勢推定を停止してください。"
-            )
-            return
         if checked:
             self._camera_stream_manager.start_camera(device_id)
             # --- プレビューウィンドウを開く
@@ -191,8 +185,8 @@ class MainWindow(QMainWindow):
             if btn is None:
                 continue
             running = btn.isChecked()
-            # 起動していないボタンのみ、推定中は無効化
-            btn.setEnabled(self._launch_enabled or running)
+            # 推定中 (_launch_enabled=False) はすべて無効化
+            btn.setEnabled(self._launch_enabled)
 
 
     def _on_preview_closed(self, device_id: str) -> None:
