@@ -9,6 +9,7 @@ from pathlib import Path
 import re
 import sys
 
+import cv2
 import numpy as np
 from PySide6.QtWidgets import (
     QDialog,
@@ -25,6 +26,8 @@ from PySide6.QtGui import QPixmap, QImage, QCloseEvent
 
 from estv.devices.camera_stream_manager import CameraStreamManager
 from estv.devices.camera_calibrator import CameraCalibrator
+from estv.estimators.pose_estimator import PoseEstimator
+from estv.estimators.pose_drawer import draw_pose_landmarks
 from estv.gui.style_constants import (
     TEXT_COLOR,
     BACKGROUND_COLOR,
@@ -90,6 +93,8 @@ class CameraPreviewWindow(QDialog):
         self.device_id = device_id
         self.camera_stream_manager = camera_stream_manager
         self._on_closed = on_closed
+        self.pose_estimator = None
+        self.pose_estimation_enabled = False
 
         # --- キャリブ関連
         self.calibrator = CameraCalibrator()
@@ -172,11 +177,24 @@ class CameraPreviewWindow(QDialog):
         config_layout.addWidget(self.brightness_slider)
         config_group.setLayout(config_layout)
 
+        # --- Estimateグループ
+        self.estimate_button = QPushButton("姿勢推定開始")
+        self.estimate_button.setCheckable(True)
+        self.estimate_button.setFixedWidth(480)
+        self.estimate_button.clicked.connect(self._on_estimate_toggle)
+        self.estimate_button.setEnabled(self.calibration_done)
+
+        estimate_group = QGroupBox("Estimate")
+        estimate_layout = QVBoxLayout()
+        estimate_layout.addWidget(self.estimate_button)
+        estimate_group.setLayout(estimate_layout)
+
         # --- 全体レイアウト
         layout = QVBoxLayout()
         layout.addWidget(preview_group)
         layout.addWidget(calib_group)
         layout.addWidget(config_group)
+        layout.addWidget(estimate_group)
         self.setLayout(layout)
         self.adjustSize()
         self.setFixedSize(self.size())
@@ -209,20 +227,22 @@ class CameraPreviewWindow(QDialog):
         self._calib_timer.timeout.connect(self._on_calib_frame_timer)
 
         self._update_status_label()
+        self.estimate_button.setEnabled(self.calibration_done)
 
 
     def _on_image_ready(self, device_id: str, qimg: QImage) -> None:
-        """このデバイス用の新しいプレビュー画像を処理する。
-
-        パラメータ
-        ----------
-        device_id : str
-            ``qimg`` を生成したカメラの識別子。
-        qimg : QImage
-            Qt 表示用に変換されたフレーム。
-        """
         if device_id != self.device_id:
             return
+
+        # もし姿勢推定オンなら骨格を重畳
+        if self.pose_estimation_enabled and self._last_image is not None:
+            landmarks = self.pose_estimator.estimate(self._last_image)
+            img_pose = draw_pose_landmarks(self._last_image, landmarks)
+            # OpenCV BGR→Qt RGB
+            rgb = cv2.cvtColor(img_pose, cv2.COLOR_BGR2RGB)
+            h, w, _ = rgb.shape
+            qimg = QImage(rgb.data, w, h, 3 * w, QImage.Format.Format_RGB888).copy()
+
         self.image_label.setPixmap(
             QPixmap.fromImage(qimg).scaled(
                 self.image_label.size(),
@@ -311,6 +331,7 @@ class CameraPreviewWindow(QDialog):
             except Exception as e:
                 self.status_label.setStyleSheet(f"color: {WARNING_COLOR};")
                 self.status_label.setText(f"キャリブレーション失敗: {str(e)}")
+            self.estimate_button.setEnabled(self.calibration_done)
             self._stop_calibration(cancel=False)
 
 
@@ -338,6 +359,7 @@ class CameraPreviewWindow(QDialog):
         else:
             self.progress_bar.setValue(self.progress_bar.maximum())
         self._update_status_label()
+        self.estimate_button.setEnabled(self.calibration_done)
 
 
     def _update_status_label(self) -> None:
@@ -354,6 +376,17 @@ class CameraPreviewWindow(QDialog):
             self.status_label.setText("キャリブレーションが必要です")
 
 
+    def _on_estimate_toggle(self, checked: bool) -> None:
+        if checked:
+            self.pose_estimation_enabled = True
+            if self.pose_estimator is None:
+                self.pose_estimator = PoseEstimator()
+            self.estimate_button.setText("姿勢推定停止")
+        else:
+            self.pose_estimation_enabled = False
+            self.estimate_button.setText("姿勢推定開始")
+
+
     def closeEvent(self, event: QCloseEvent) -> None:
         """ウィンドウを閉じる際にストリームを停止し後片付けを行う。"""
         if self.calibrating:
@@ -362,6 +395,8 @@ class CameraPreviewWindow(QDialog):
         self.camera_stream_manager.frame_ready.disconnect(self._on_frame_ready)
         self.camera_stream_manager.stop_camera(self.device_id)
         self._save_settings()
+        if self.pose_estimator is not None:
+            self.pose_estimator.close()
         if self._on_closed:
             self._on_closed(self.device_id)
         super().closeEvent(event)

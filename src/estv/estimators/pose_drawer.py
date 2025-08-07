@@ -10,12 +10,12 @@ import mediapipe as mp
 POSE_CONNECTIONS = list(mp.solutions.pose.POSE_CONNECTIONS)
 
 LINE_COLOR = (255, 255, 0)      # 線の色（BGR）
-LINE_THICKNESS = 3              # 線の太さ
+LINE_THICKNESS = 2              # 線の太さ
 
-POINT_SIZE = 8                  # ポイントの一辺ピクセル数
+POINT_SIZE = 4                  # ポイントの一辺ピクセル数
 POINT_COLOR = (255, 255, 255)   # ポイントの色（BGR）
 POINT_EDGE_COLOR = (0, 0, 0)    # ポイントの外枠の色（BGR）
-POINT_EDGE_THICKNESS = 3        # ポイントの外枠の太さ
+POINT_EDGE_THICKNESS = 2        # ポイントの外枠の太さ
 
 
 def draw_pose_landmarks(
