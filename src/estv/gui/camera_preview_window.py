@@ -138,6 +138,7 @@ class CameraPreviewWindow(QDialog):
         self.calibration_done = False
         self._frame_count = 0
         self._last_image = None
+        self._first_frame_received = False
 
         # --- カメラ設定読み込み
         settings_path = _settings_file_path(self.device_id)
@@ -254,6 +255,8 @@ class CameraPreviewWindow(QDialog):
         main_win = parent
         if hasattr(main_win, "_update_global_est_button_state"):
             main_win._update_global_est_button_state()
+        if hasattr(main_win, "_update_stereo_button_state"):
+            main_win._update_stereo_button_state()
 
 
     def _on_image_ready(self, device_id: str, qimg: QImage) -> None:
@@ -285,6 +288,11 @@ class CameraPreviewWindow(QDialog):
         if device_id != self.device_id:
             return
         self._last_image = frame
+        if not self._first_frame_received:
+            self._first_frame_received = True
+            main_win = self.parent()
+            if hasattr(main_win, "_update_stereo_button_state"):
+                main_win._update_stereo_button_state()
         if (
             self._pose_estimation_enabled
             and self._pose_worker is not None
@@ -410,6 +418,8 @@ class CameraPreviewWindow(QDialog):
         main_win = self.parent()
         if hasattr(main_win, "_update_global_est_button_state"):
             main_win._update_global_est_button_state()
+        if hasattr(main_win, "_update_stereo_button_state"):
+            main_win._update_stereo_button_state()
 
 
     def _update_status_label(self) -> None:
