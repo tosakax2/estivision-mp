@@ -1,3 +1,5 @@
+from abc import ABC, abstractmethod
+
 import numpy as np
 
 from estv.estimators.pose_estimator import PoseLandmark
@@ -11,8 +13,9 @@ class VirtualTrackerResult:
         self.rotation = rotation  # shape: (4,) quaternion
 
 
-class BaseTracker:
+class BaseTracker(ABC):
 
+    @abstractmethod
     def update(self, landmarks: list[PoseLandmark | None]) -> list[VirtualTrackerResult]:
         """与えられた姿勢推定ランドマークから仮想トラッカー情報を計算して返す。"""
         raise NotImplementedError
