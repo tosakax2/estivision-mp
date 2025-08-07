@@ -4,7 +4,11 @@ import time
 
 import cv2
 import numpy as np
-from PySide6.QtCore import QThread, Signal, Slot
+from PySide6.QtCore import (
+    QThread,
+    Signal,
+    Slot
+)
 from PySide6.QtGui import QImage
 
 

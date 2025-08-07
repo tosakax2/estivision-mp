@@ -4,7 +4,11 @@ from collections.abc import Callable
 import threading
 import warnings
 
-from PySide6.QtCore import QObject, Signal, QTimer
+from PySide6.QtCore import (
+    QObject,
+    QTimer,
+    Signal
+)
 
 from estv.devices.camera_stream import CameraStream
 

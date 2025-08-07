@@ -11,29 +11,36 @@ import sys
 
 import cv2
 import numpy as np
+from PySide6.QtCore import (
+    Qt,
+    QTimer
+)
+from PySide6.QtGui import (
+    QCloseEvent,
+    QImage,
+    QPixmap
+)
 from PySide6.QtWidgets import (
     QDialog,
-    QVBoxLayout,
     QGroupBox,
     QLabel,
-    QPushButton,
-    QWidget,
+    QMessageBox,
     QProgressBar,
+    QPushButton,
     QSlider,
-    QMessageBox
+    QVBoxLayout,
+    QWidget
 )
-from PySide6.QtCore import Qt, QTimer
-from PySide6.QtGui import QPixmap, QImage, QCloseEvent
 
-from estv.devices.camera_stream_manager import CameraStreamManager
 from estv.devices.camera_calibrator import CameraCalibrator
-from estv.estimators.pose_estimator import PoseEstimator
+from estv.devices.camera_stream_manager import CameraStreamManager
 from estv.estimators.pose_drawer import draw_pose_landmarks
+from estv.estimators.pose_estimator import PoseEstimator
 from estv.gui.style_constants import (
-    TEXT_COLOR,
     BACKGROUND_COLOR,
-    WARNING_COLOR,
     SUBTEXT_COLOR,
+    TEXT_COLOR,
+    WARNING_COLOR,
 )
 
 

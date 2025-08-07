@@ -1,16 +1,28 @@
 # estv/gui/main_window.py
 
-from PySide6.QtWidgets import (
-    QMainWindow, QWidget, QVBoxLayout, QTableWidget, QTableWidgetItem, QPushButton,
-    QAbstractItemView, QLabel, QMessageBox
-)
 from PySide6.QtCore import Qt
-from PySide6.QtGui import QColor, QCloseEvent
+from PySide6.QtGui import (
+    QCloseEvent,
+    QColor
+)
+from PySide6.QtWidgets import (
+    QAbstractItemView,
+    QGroupBox,
+    QMainWindow,
+    QPushButton,
+    QTableWidget,
+    QTableWidgetItem,
+    QVBoxLayout,
+    QWidget
+)
 
-from estv.devices.media_device_manager import MediaDeviceManager
 from estv.devices.camera_stream_manager import CameraStreamManager
+from estv.devices.media_device_manager import MediaDeviceManager
 from estv.gui.camera_preview_window import CameraPreviewWindow
-from estv.gui.style_constants import SUCCESS_COLOR, WARNING_COLOR
+from estv.gui.style_constants import (
+    SUCCESS_COLOR,
+    WARNING_COLOR
+)
 
 
 class MainWindow(QMainWindow):
@@ -42,9 +54,11 @@ class MainWindow(QMainWindow):
         """ウィンドウ内のウィジェットとレイアウトを構成する。"""
         central_widget = QWidget()
         main_layout = QVBoxLayout()
-        main_layout.addWidget(QLabel("接続中カメラ一覧:"))
 
-        # --- テーブルウィジェット
+        # --- Devicesグループボックス
+        devices_group = QGroupBox("Devices")
+        devices_layout = QVBoxLayout()
+
         self.camera_table = QTableWidget()
         self.camera_table.setColumnCount(4)
         self.camera_table.setHorizontalHeaderLabels(["ID", "名前", "状態", "操作"])
@@ -52,10 +66,10 @@ class MainWindow(QMainWindow):
         self.camera_table.setSelectionMode(QAbstractItemView.NoSelection)
         self.camera_table.horizontalHeader().setStretchLastSection(True)
         self.camera_table.verticalHeader().setVisible(False)
-        self.camera_table.setColumnWidth(0, 40)   # ID
-        self.camera_table.setColumnWidth(1, 240)  # 名前
-        self.camera_table.setColumnWidth(2, 60)   # 状態
-        self.camera_table.setColumnWidth(3, 120)  # 操作（トグルボタン）
+        self.camera_table.setColumnWidth(0, 40)
+        self.camera_table.setColumnWidth(1, 240)
+        self.camera_table.setColumnWidth(2, 60)
+        self.camera_table.setColumnWidth(3, 120)
         self.camera_table.setFixedSize(480, 200)
         self.camera_table.setStyleSheet("""
             QTableWidget::item {
@@ -71,17 +85,28 @@ class MainWindow(QMainWindow):
             }
         """)
 
-        # --- 全カメラ用 姿勢推定トグル
+        devices_layout.addWidget(self.camera_table)
+        devices_group.setLayout(devices_layout)
+
+        # --- Estimationグループボックス
+        estimation_group = QGroupBox("Estimation")
+        estimation_layout = QVBoxLayout()
         self.global_est_button = QPushButton("姿勢推定開始")
         self.global_est_button.setCheckable(True)
         self.global_est_button.setEnabled(False)
         self.global_est_button.clicked.connect(self._toggle_global_estimation)
         self._launch_enabled = True
+        estimation_layout.addWidget(self.global_est_button)
+        estimation_group.setLayout(estimation_layout)
 
-        main_layout.addWidget(self.camera_table)
-        main_layout.addWidget(self.global_est_button)
+        # --- 全体レイアウトに追加
+        main_layout.addWidget(devices_group)
+        main_layout.addWidget(estimation_group)
         central_widget.setLayout(main_layout)
         self.setCentralWidget(central_widget)
+
+        self.adjustSize()
+        self.setFixedSize(self.size())
 
 
     def _on_camera_devices_update(self, camera_device_infos: list[dict[str, str]]) -> None:

@@ -1,9 +1,9 @@
 from pathlib import Path
 
 import numpy as np
-from PIL import Image
-from reportlab.pdfgen import canvas
 from reportlab.lib.units import mm
+from reportlab.pdfgen import canvas
+from PIL import Image
 
 
 # --- 定数

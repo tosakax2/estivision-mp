@@ -1,5 +1,3 @@
-from typing import Optional
-
 import numpy as np
 
 from estv.estimators.pose_estimator import PoseLandmark
@@ -13,7 +11,7 @@ class MediaPipeVirtualTracker(BaseTracker):
         pass
 
 
-    def update(self, landmarks: list[Optional[PoseLandmark]]) -> list[VirtualTrackerResult]:
+    def update(self, landmarks: list[PoseLandmark | None]) -> list[VirtualTrackerResult]:
         results = []
 
         # --- 1. 腰（左右hipの中点）

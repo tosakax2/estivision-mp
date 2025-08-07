@@ -1,8 +1,8 @@
 # estv/gui/safe_widgets.py
 """ユーザー操作による誤動作を防ぐカスタムウィジェット群。"""
 
-from PySide6.QtWidgets import QComboBox
 from PySide6.QtGui import QWheelEvent
+from PySide6.QtWidgets import QComboBox
 
 
 class SafeComboBox(QComboBox):
