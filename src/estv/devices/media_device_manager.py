@@ -4,11 +4,11 @@
 from PySide6.QtCore import (
     QObject,
     QTimer,
-    Signal
+    Signal,
 )
 from PySide6.QtMultimedia import (
     QCameraDevice,
-    QMediaDevices
+    QMediaDevices,
 )
 
 

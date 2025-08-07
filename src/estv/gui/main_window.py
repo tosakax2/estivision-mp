@@ -2,11 +2,11 @@
 
 from PySide6.QtCore import (
     Qt,
-    QTimer
+    QTimer,
 )
 from PySide6.QtGui import (
     QCloseEvent,
-    QColor
+    QColor,
 )
 from PySide6.QtWidgets import (
     QAbstractItemView,
@@ -19,7 +19,7 @@ from PySide6.QtWidgets import (
     QTableWidget,
     QTableWidgetItem,
     QVBoxLayout,
-    QWidget
+    QWidget,
 )
 
 from estv.devices.camera_stream_manager import CameraStreamManager

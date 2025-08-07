@@ -1,9 +1,14 @@
 import os
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
-from PySide6.QtWidgets import QApplication
+from PySide6.QtCore import (
+    QPoint,
+    QPointF,
+    Qt,
+)
 from PySide6.QtGui import QWheelEvent
-from PySide6.QtCore import QPointF, QPoint, Qt
+from PySide6.QtWidgets import QApplication
+
 from estv.gui.safe_widgets import SafeComboBox
 
 

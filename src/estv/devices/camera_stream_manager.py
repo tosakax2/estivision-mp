@@ -7,7 +7,7 @@ import warnings
 from PySide6.QtCore import (
     QObject,
     QTimer,
-    Signal
+    Signal,
 )
 
 from estv.devices.camera_stream import CameraStream
