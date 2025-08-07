@@ -72,7 +72,7 @@ class MainWindow(QMainWindow):
         # --- 全カメラ用 姿勢推定トグル
         self.global_est_button = QPushButton("姿勢推定開始")
         self.global_est_button.setCheckable(True)
-        self.global_est_button.setEnabled(False) # 起動カメラが無い間は無効
+        self.global_est_button.setEnabled(False)
         self.global_est_button.clicked.connect(self._toggle_global_estimation)
 
         main_layout.addWidget(self.camera_table)
@@ -143,6 +143,13 @@ class MainWindow(QMainWindow):
                 self._preview_windows[device_id].close()
             else:
                 self._camera_stream_manager.stop_camera(device_id)
+        self._update_global_est_button_state()
+
+
+    def _update_global_est_button_state(self) -> None:
+        """キャリブ済みプレビューが1つでもあればボタンを有効化。"""
+        has_ready = any(p.calibration_done for p in self._preview_windows.values())
+        self.global_est_button.setEnabled(has_ready)
 
 
     def _toggle_global_estimation(self, checked: bool) -> None:
@@ -159,6 +166,7 @@ class MainWindow(QMainWindow):
         """プレビューウィンドウが閉じられた際の後処理。"""
         if device_id in self._preview_windows:
             del self._preview_windows[device_id]
+        self._update_global_est_button_state()
 
 
     def closeEvent(self, event: QCloseEvent) -> None:

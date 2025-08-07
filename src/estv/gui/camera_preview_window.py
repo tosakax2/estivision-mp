@@ -214,6 +214,12 @@ class CameraPreviewWindow(QDialog):
         self._calib_timer.timeout.connect(self._on_calib_frame_timer)
 
         self._update_status_label()
+        # キャリブ済フラグが変わるたび親(MainWindow)にボタン活性更新を促す
+        if isinstance(parent, QWidget) and parent.parent():
+            try:
+                parent.parent()._update_global_est_button_state()
+            except AttributeError:
+                pass
 
 
     def _on_image_ready(self, device_id: str, qimg: QImage) -> None:
