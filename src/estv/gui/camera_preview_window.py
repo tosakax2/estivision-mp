@@ -256,6 +256,12 @@ class CameraPreviewWindow(QDialog):
             self._last_image = frame
 
 
+    @property
+    def latest_frame(self) -> np.ndarray | None:
+        """直近フレーム（ステレオキャリブレーション用に公開）"""
+        return self._last_image
+
+
     def _on_exposure_changed(self, value: int) -> None:
         """露出スライダー変更時にカメラへ反映し設定を保存する。"""
         self.camera_stream_manager.set_exposure(self.device_id, float(value))

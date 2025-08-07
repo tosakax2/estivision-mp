@@ -1,14 +1,20 @@
 # estv/gui/main_window.py
 
-from PySide6.QtCore import Qt
+from PySide6.QtCore import (
+    Qt,
+    QTimer
+)
 from PySide6.QtGui import (
     QCloseEvent,
     QColor
 )
 from PySide6.QtWidgets import (
     QAbstractItemView,
+    QDialog,
     QGroupBox,
+    QLabel,
     QMainWindow,
+    QMessageBox,
     QPushButton,
     QTableWidget,
     QTableWidgetItem,
@@ -88,6 +94,16 @@ class MainWindow(QMainWindow):
         devices_layout.addWidget(self.camera_table)
         devices_group.setLayout(devices_layout)
 
+
+        # --- Calibrationグループボックス
+        calibration_group = QGroupBox("Calibration")
+        calibration_layout = QVBoxLayout()
+        self.stereo_calib_button = QPushButton("ステレオキャリブレーション開始")
+        self.stereo_calib_button.setEnabled(False)
+        calibration_layout.addWidget(self.stereo_calib_button)
+        calibration_group.setLayout(calibration_layout)
+        self.stereo_calib_button.clicked.connect(self._start_stereo_calibration)
+
         # --- Estimationグループボックス
         estimation_group = QGroupBox("Estimation")
         estimation_layout = QVBoxLayout()
@@ -101,6 +117,7 @@ class MainWindow(QMainWindow):
 
         # --- 全体レイアウトに追加
         main_layout.addWidget(devices_group)
+        main_layout.addWidget(calibration_group)
         main_layout.addWidget(estimation_group)
         central_widget.setLayout(main_layout)
         self.setCentralWidget(central_widget)
@@ -154,6 +171,7 @@ class MainWindow(QMainWindow):
             self.camera_table.setCellWidget(row, 3, btn)
             self.camera_table.setRowHeight(row, 32)
 
+            self._update_stereo_button_state()
             self._update_start_buttons_state()
 
 
@@ -218,7 +236,86 @@ class MainWindow(QMainWindow):
         """プレビューウィンドウが閉じられた際の後処理。"""
         if device_id in self._preview_windows:
             del self._preview_windows[device_id]
+        self._update_stereo_button_state()
         self._update_global_est_button_state()
+
+
+    def _update_stereo_button_state(self) -> None:
+        """内部キャリブ済み & 起動中カメラが 2 台以上ならボタンを有効化."""
+        ready = [
+            p
+            for p in self._preview_windows.values()
+            if p.calibration_done and p.latest_frame is not None
+        ]
+        self.stereo_calib_button.setEnabled(len(ready) >= 2)
+
+    def _start_stereo_calibration(self) -> None:
+        """5 秒カウント後に 2 台同時撮影し外部パラメータを推定."""
+        # 対象カメラを固定（先頭 2 台）
+        targets = [
+            p for p in self._preview_windows.values() if p.calibration_done
+        ][:2]
+        if len(targets) < 2:
+            return
+
+        # ---------------- カウントダウン用ポップアップ ---------------- #
+        popup = QDialog(self)
+        popup.setWindowTitle("Stereo Calibration")
+        vbox = QVBoxLayout(popup)
+        label = QLabel("5", alignment=Qt.AlignCenter)
+        label.setStyleSheet("font-size: 48pt;")
+        vbox.addWidget(label)
+        popup.setFixedSize(200, 150)
+        popup.show()
+
+        counter = {"sec": 5}
+
+        def _tick():
+            counter["sec"] -= 1
+            if counter["sec"] == 0:
+                timer.stop()
+                popup.accept()  # 閉じる
+                self._run_stereo_calibration(targets)
+            else:
+                label.setText(str(counter["sec"]))
+
+        timer = QTimer(popup)
+        timer.setInterval(1000)
+        timer.timeout.connect(_tick)
+        timer.start()
+
+
+    def _run_stereo_calibration(self, previews: list) -> None:
+        cam1, cam2 = previews
+        img1, img2 = cam1.latest_frame, cam2.latest_frame
+        if img1 is None or img2 is None:
+            QMessageBox.warning(self, "撮影失敗", "画像を取得できませんでした。")
+            return
+
+        from pathlib import Path
+        from estv.devices.stereo_calibrator import StereoCalibrator
+        from estv.gui.camera_preview_window import _calib_file_path  # reuse helper
+
+        calib_path1 = Path(_calib_file_path(cam1.device_id))
+        calib_path2 = Path(_calib_file_path(cam2.device_id))
+
+        try:
+            stereo = StereoCalibrator(calib_path1, calib_path2)
+            rms = stereo.calibrate(img1, img2)
+            QMessageBox.information(
+                self,
+                "ステレオキャリブレーション完了",
+                f"推定終了: RMS 誤差 = {rms:.3f}",
+            )
+        except Exception as exc:  # pylint: disable=broad-except
+            QMessageBox.critical(
+                self,
+                "ステレオキャリブレーション失敗",
+                str(exc),
+            )
+
+        # ボタンを再び有効化
+        self._update_stereo_button_state()
 
 
     def closeEvent(self, event: QCloseEvent) -> None:
