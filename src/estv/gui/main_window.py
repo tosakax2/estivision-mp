@@ -2,7 +2,7 @@
 
 from PySide6.QtWidgets import (
     QMainWindow, QWidget, QVBoxLayout, QTableWidget, QTableWidgetItem, QPushButton,
-    QAbstractItemView, QLabel
+    QAbstractItemView, QLabel, QMessageBox
 )
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QColor, QCloseEvent
@@ -31,6 +31,8 @@ class MainWindow(QMainWindow):
 
         self._camera_device_infos: list[dict[str, str]] = []
         self._preview_windows: dict[str, CameraPreviewWindow] = {}
+
+        self._estimation_active: bool = False
 
         self.setWindowTitle("ESTV - ESTiVision-MP")
         self._setup_ui()
@@ -74,6 +76,7 @@ class MainWindow(QMainWindow):
         self.global_est_button.setCheckable(True)
         self.global_est_button.setEnabled(False)
         self.global_est_button.clicked.connect(self._toggle_global_estimation)
+        self._launch_enabled = True
 
         main_layout.addWidget(self.camera_table)
         main_layout.addWidget(self.global_est_button)
@@ -108,7 +111,7 @@ class MainWindow(QMainWindow):
             self.camera_table.setItem(row, 1, name_item)
 
             # --- 状態
-            status_item = QTableWidgetItem("起動中" if running else "停止中")
+            status_item = QTableWidgetItem("推定中" if self._estimation_active and running else ("起動中" if running else "停止中"))
             status_item.setTextAlignment(Qt.AlignCenter)
             color = QColor(SUCCESS_COLOR) if running else QColor(WARNING_COLOR)
             status_item.setForeground(color)
@@ -120,14 +123,26 @@ class MainWindow(QMainWindow):
             btn.setChecked(running)
             btn.setMinimumWidth(60)
             btn.setStyleSheet("padding: 4px 12px; margin: 4px;")
+            if self._estimation_active:
+                btn.setEnabled(False)
             btn.clicked.connect(lambda checked, cid=camera_id: self._toggle_camera(cid, checked))
             self.camera_table.setCellWidget(row, 3, btn)
-
             self.camera_table.setRowHeight(row, 32)
+
+            self._update_start_buttons_state()
 
 
     def _toggle_camera(self, device_id: str, checked: bool) -> None:
         """トグルボタン押下でカメラを開始・停止する。"""
+        # --- 推定中は新しいカメラを起動させない
+        if checked and not self._launch_enabled:
+            return  # 起動要求を無視
+        if self._estimation_active:
+            QMessageBox.warning(
+                self, "操作できません",
+                "このカメラは姿勢推定を実行中です。\n先に姿勢推定を停止してください。"
+            )
+            return
         if checked:
             self._camera_stream_manager.start_camera(device_id)
             # --- プレビューウィンドウを開く
@@ -154,12 +169,30 @@ class MainWindow(QMainWindow):
 
     def _toggle_global_estimation(self, checked: bool) -> None:
         """起動済み＆キャリブレーション済みカメラの推定を一括 ON/OFF"""
+        self._estimation_active = checked
         for preview in self._preview_windows.values():
             if preview.calibration_done: # キャリブ済みのみ対象
                 preview.set_pose_estimation_enabled(checked)
 
-        # ボタン表示を更新
+        # --- ボタン表示を更新
         self.global_est_button.setText("姿勢推定停止" if checked else "姿勢推定開始")
+        self._refresh_camera_table()
+
+        # --- 推定中は新規カメラ起動を禁止
+        self._launch_enabled = not checked
+        self._update_start_buttons_state()
+
+
+    def _update_start_buttons_state(self) -> None:
+        """行ごとの '起動／停止' ボタンの有効・無効を更新する。"""
+        rows = self.camera_table.rowCount()
+        for row in range(rows):
+            btn = self.camera_table.cellWidget(row, 3)
+            if btn is None:
+                continue
+            running = btn.isChecked()
+            # 起動していないボタンのみ、推定中は無効化
+            btn.setEnabled(self._launch_enabled or running)
 
 
     def _on_preview_closed(self, device_id: str) -> None:

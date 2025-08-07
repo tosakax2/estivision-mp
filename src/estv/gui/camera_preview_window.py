@@ -20,6 +20,7 @@ from PySide6.QtWidgets import (
     QWidget,
     QProgressBar,
     QSlider,
+    QMessageBox
 )
 from PySide6.QtCore import Qt, QTimer
 from PySide6.QtGui import QPixmap, QImage, QCloseEvent
@@ -381,6 +382,15 @@ class CameraPreviewWindow(QDialog):
         """ウィンドウを閉じる際にストリームを停止し後片付けを行う。"""
         if self.calibrating:
             self._stop_calibration(cancel=True)
+        # ★推定 ON 中は閉じられない
+        if self._pose_estimation_enabled:
+            QMessageBox.warning(
+                self, "プレビューを閉じられません",
+                "このカメラは姿勢推定を実行中です。\n"
+                "先に姿勢推定を停止してください。"
+            )
+            event.ignore()
+            return
         self.camera_stream_manager.q_image_ready.disconnect(self._on_image_ready_slot)
         self.camera_stream_manager.frame_ready.disconnect(self._on_frame_ready)
         self.camera_stream_manager.stop_camera(self.device_id)
