@@ -13,12 +13,16 @@ import cv2
 import numpy as np
 from PySide6.QtCore import (
     Qt,
-    QTimer
+    QTimer,
+    QObject,
+    QThread,
+    Signal,
+    Slot,
 )
 from PySide6.QtGui import (
     QCloseEvent,
     QImage,
-    QPixmap
+    QPixmap,
 )
 from PySide6.QtWidgets import (
     QDialog,
@@ -29,7 +33,7 @@ from PySide6.QtWidgets import (
     QPushButton,
     QSlider,
     QVBoxLayout,
-    QWidget
+    QWidget,
 )
 
 from estv.devices.camera_calibrator import CameraCalibrator
@@ -73,8 +77,29 @@ def _settings_file_path(device_id: str) -> str:
     return str(_get_data_dir() / f"settings_{safe_id}.json")
 
 
+class PoseEstimationWorker(QObject):
+    """別スレッドで姿勢推定を実行するワーカー。"""
+
+    result_ready = Signal(object)
+
+    def __init__(self) -> None:
+        super().__init__()
+        self._estimator = PoseEstimator()
+
+    @Slot(object)
+    def process_frame(self, frame: np.ndarray) -> None:
+        landmarks = self._estimator.estimate(frame)
+        self.result_ready.emit(landmarks)
+
+    @Slot()
+    def close(self) -> None:
+        self._estimator.close()
+
+
 class CameraPreviewWindow(QDialog):
     """カメラのプレビューウィンドウ＋キャリブレーション制御。"""
+
+    inference_input = Signal(object)
 
     def __init__(
         self,
@@ -101,8 +126,11 @@ class CameraPreviewWindow(QDialog):
         self.device_id = device_id
         self.camera_stream_manager = camera_stream_manager
         self._on_closed = on_closed
-        self.pose_estimator = None
         self._pose_estimation_enabled = False
+        self._pose_thread: QThread | None = None
+        self._pose_worker: PoseEstimationWorker | None = None
+        self._last_landmarks: list | None = None
+        self._inference_busy = False
 
         # --- キャリブ関連
         self.calibrator = CameraCalibrator()
@@ -232,11 +260,13 @@ class CameraPreviewWindow(QDialog):
         if device_id != self.device_id:
             return
 
-        # もし姿勢推定オンなら骨格を重畳
-        if self._pose_estimation_enabled and self._last_image is not None:
-            landmarks = self.pose_estimator.estimate(self._last_image)
-            img_pose = draw_pose_landmarks(self._last_image, landmarks)
-            # OpenCV BGR→Qt RGB
+        # もし姿勢推定オンなら最新推定結果で骨格を重畳
+        if (
+            self._pose_estimation_enabled
+            and self._last_image is not None
+            and self._last_landmarks is not None
+        ):
+            img_pose = draw_pose_landmarks(self._last_image, self._last_landmarks)
             rgb = cv2.cvtColor(img_pose, cv2.COLOR_BGR2RGB)
             h, w, _ = rgb.shape
             qimg = QImage(rgb.data, w, h, 3 * w, QImage.Format.Format_RGB888).copy()
@@ -251,9 +281,23 @@ class CameraPreviewWindow(QDialog):
 
 
     def _on_frame_ready(self, device_id: str, frame: np.ndarray) -> None:
-        """キャリブレーション用に最新フレームを保持する。"""
-        if device_id == self.device_id:
-            self._last_image = frame
+        """キャリブレーション用に最新フレームを保持し推定を要求する。"""
+        if device_id != self.device_id:
+            return
+        self._last_image = frame
+        if (
+            self._pose_estimation_enabled
+            and self._pose_worker is not None
+            and not self._inference_busy
+        ):
+            self._inference_busy = True
+            self.inference_input.emit(frame)
+
+
+    def _on_pose_result(self, landmarks: list) -> None:
+        """姿勢推定結果を受け取り保存する。"""
+        self._last_landmarks = landmarks
+        self._inference_busy = False
 
 
     @property
@@ -385,9 +429,26 @@ class CameraPreviewWindow(QDialog):
     def set_pose_estimation_enabled(self, enabled: bool) -> None:
         """プレビュー単位の推定 ON/OFF（外部制御専用）"""
         if enabled and not self._pose_estimation_enabled:
-            # 必要に応じて推定器を生成
-            if self.pose_estimator is None:
-                self.pose_estimator = PoseEstimator()
+            if self._pose_worker is None:
+                self._pose_worker = PoseEstimationWorker()
+                self._pose_thread = QThread(self)
+                self._pose_worker.moveToThread(self._pose_thread)
+                self._pose_worker.result_ready.connect(self._on_pose_result)
+                self.inference_input.connect(self._pose_worker.process_frame)
+                self._pose_thread.start()
+        elif not enabled and self._pose_estimation_enabled:
+            if self._pose_worker is not None and self._pose_thread is not None:
+                self.inference_input.disconnect(self._pose_worker.process_frame)
+                self._pose_worker.result_ready.disconnect(self._on_pose_result)
+                self._pose_thread.quit()
+                self._pose_thread.wait()
+                self._pose_worker.close()
+                self._pose_worker.deleteLater()
+                self._pose_thread.deleteLater()
+                self._pose_worker = None
+                self._pose_thread = None
+                self._last_landmarks = None
+                self._inference_busy = False
         self._pose_estimation_enabled = enabled
 
 
@@ -404,12 +465,11 @@ class CameraPreviewWindow(QDialog):
             )
             event.ignore()
             return
+        self.set_pose_estimation_enabled(False)
         self.camera_stream_manager.q_image_ready.disconnect(self._on_image_ready_slot)
         self.camera_stream_manager.frame_ready.disconnect(self._on_frame_ready)
         self.camera_stream_manager.stop_camera(self.device_id)
         self._save_settings()
-        if self.pose_estimator is not None:
-            self.pose_estimator.close()
         if self._on_closed:
             self._on_closed(self.device_id)
         super().closeEvent(event)
