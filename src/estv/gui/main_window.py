@@ -69,7 +69,14 @@ class MainWindow(QMainWindow):
             }
         """)
 
+        # --- 全カメラ用 姿勢推定トグル
+        self.global_est_button = QPushButton("姿勢推定開始")
+        self.global_est_button.setCheckable(True)
+        self.global_est_button.setEnabled(False) # 起動カメラが無い間は無効
+        self.global_est_button.clicked.connect(self._toggle_global_estimation)
+
         main_layout.addWidget(self.camera_table)
+        main_layout.addWidget(self.global_est_button)
         central_widget.setLayout(main_layout)
         self.setCentralWidget(central_widget)
 
@@ -136,6 +143,16 @@ class MainWindow(QMainWindow):
                 self._preview_windows[device_id].close()
             else:
                 self._camera_stream_manager.stop_camera(device_id)
+
+
+    def _toggle_global_estimation(self, checked: bool) -> None:
+        """起動済み＆キャリブレーション済みカメラの推定を一括 ON/OFF"""
+        for preview in self._preview_windows.values():
+            if preview.calibration_done: # キャリブ済みのみ対象
+                preview.set_pose_estimation_enabled(checked)
+
+        # ボタン表示を更新
+        self.global_est_button.setText("姿勢推定停止" if checked else "姿勢推定開始")
 
 
     def _on_preview_closed(self, device_id: str) -> None:
