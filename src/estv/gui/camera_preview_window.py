@@ -4,6 +4,7 @@
 from collections.abc import Callable
 from filelock import FileLock
 import json
+import logging
 import os
 from pathlib import Path
 import re
@@ -46,6 +47,9 @@ from estv.gui.style_constants import (
     TEXT_COLOR,
     WARNING_COLOR,
 )
+
+
+logger = logging.getLogger(__name__)
 
 
 # --- 定数
@@ -155,7 +159,7 @@ class CameraPreviewWindow(QDialog):
                 self._exposure_value = int(data.get("exposure", 0))
                 self._brightness_value = int(data.get("brightness", 0))
             except Exception as e:
-                print(f"カメラ設定読み込み失敗: {e}")
+                logger.error("カメラ設定読み込み失敗: %s", e)
 
         # --- UI構成
         # --- Preview グループ
@@ -242,7 +246,7 @@ class CameraPreviewWindow(QDialog):
                 self.progress_bar_value_on_load = True
                 self.progress_bar.setValue(self.progress_bar.maximum())
             except Exception as e:
-                print(f"キャリブレーションパラメータ読み込み失敗: {e}")
+                logger.error("キャリブレーションパラメータ読み込み失敗: %s", e)
                 self.progress_bar_value_on_load = False
         else:
             self.progress_bar_value_on_load = False
@@ -341,7 +345,7 @@ class CameraPreviewWindow(QDialog):
                 with open(settings_path, "w", encoding="utf-8") as f:
                     json.dump(data, f)
         except Exception as e:
-            print(f"カメラ設定保存失敗: {e}")
+            logger.error("カメラ設定保存失敗: %s", e)
 
 
     def _on_calib_toggle(self, checked: bool) -> None:
@@ -385,7 +389,7 @@ class CameraPreviewWindow(QDialog):
                 # --- プロジェクトルート直下のdata/に保存
                 calib_path = _calib_file_path(self.device_id)
                 self.calibrator.save(calib_path)
-                print(f"キャリブレーションパラメータを保存: {calib_path}")
+                logger.info("キャリブレーションパラメータを保存: %s", calib_path)
             except Exception as e:
                 self.status_label.setStyleSheet(f"color: {WARNING_COLOR};")
                 self.status_label.setText(f"キャリブレーション失敗: {str(e)}")
@@ -407,7 +411,7 @@ class CameraPreviewWindow(QDialog):
                     self.calibration_done = True
                     self.progress_bar.setValue(self.progress_bar.maximum())
                 except Exception as e:
-                    print(f"キャリブレーションパラメータ読み込み失敗: {e}")
+                    logger.error("キャリブレーションパラメータ読み込み失敗: %s", e)
                     self.calibration_done = False
                     self.progress_bar.setValue(0)
             else:
