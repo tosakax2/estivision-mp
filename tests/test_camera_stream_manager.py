@@ -32,7 +32,7 @@ class DummyStream:
         pass
 
 
-def test_cannot_start_more_than_three_cameras(monkeypatch):
+def test_cannot_start_more_than_two_cameras(monkeypatch):
     # Replace CameraStream with dummy implementation to avoid hardware access
     monkeypatch.setattr(mgr_module, "CameraStream", DummyStream)
 
