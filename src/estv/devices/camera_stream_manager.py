@@ -1,6 +1,7 @@
 # estv/devices/camera_stream_manager.py
 
 from collections.abc import Callable
+import logging
 import threading
 import warnings
 
@@ -11,6 +12,9 @@ from PySide6.QtCore import (
 )
 
 from estv.devices.camera_stream import CameraStream
+
+
+logger = logging.getLogger(__name__)
 
 
 class CameraStreamManager(QObject):
@@ -137,7 +141,7 @@ class CameraStreamManager(QObject):
 
     def handle_error(self, camera_id: str, msg: str) -> None:
         """``camera_id`` のストリームでエラーが発生した際の処理を行う。"""
-        print(f"[Camera {camera_id}] Error: {msg}")
+        logger.error("[Camera %s] Error: %s", camera_id, msg)
         with self._lock:
             if camera_id in self._streams:
                 stream = self._streams[camera_id]

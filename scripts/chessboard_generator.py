@@ -1,5 +1,6 @@
 from pathlib import Path
 
+import logging
 import numpy as np
 from reportlab.lib.units import mm
 from reportlab.pdfgen import canvas
@@ -9,6 +10,7 @@ from PIL import Image
 # --- 定数
 SCRIPT_DIR = Path(__file__).resolve().parent
 IMAGES_DIR = SCRIPT_DIR.parent / "images"
+logger = logging.getLogger(__name__)
 
 
 def mm_to_px(mm: float, dpi: int) -> int:
@@ -68,7 +70,7 @@ def main(
 
     # --- PNG保存
     Image.fromarray(canvas_img).save(out_path, format="PNG", compress_level=0, dpi=(dpi, dpi))
-    print(f"保存完了: '{out_path}' ({canvas_w}×{canvas_h}px @{dpi}dpi)")
+    logger.info("保存完了: '%s' (%d×%dpx @%ddpi)", out_path, canvas_w, canvas_h, dpi)
 
     # --- PDF保存
     # Pillowで一時保存したPNG画像をreportlabでA4に等倍貼り付け
@@ -85,10 +87,11 @@ def main(
     )
     c.showPage()
     c.save()
-    print(f"保存完了: '{out_pdf}' ({a4_w_mm}mm×{a4_h_mm}mm)")
+    logger.info("保存完了: '%s' (%smm×%smm)", out_pdf, a4_w_mm, a4_h_mm)
 
     return canvas_w, canvas_h
 
 
 if __name__ == "__main__":
+    logging.basicConfig(level=logging.INFO)
     main()
