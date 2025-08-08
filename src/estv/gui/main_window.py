@@ -295,6 +295,7 @@ class MainWindow(QMainWindow):
             self._stereo_params = None
             self.stereo_status_label.setText("未キャリブレーション")
 
+
     def _start_stereo_calibration(self) -> None:
         """5 秒カウント後に 2 台同時撮影し外部パラメータを推定."""
         # 対象カメラを固定（先頭 2 台）
