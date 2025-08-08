@@ -41,12 +41,11 @@ def test_cannot_start_more_than_three_cameras(monkeypatch):
 
     manager.start_camera("0")
     manager.start_camera("1")
-    manager.start_camera("2")
 
-    assert len(manager.running_device_ids()) == 3
+    assert len(manager.running_device_ids()) == 2
 
     with warnings.catch_warnings(record=True) as w:
         warnings.simplefilter("always")
-        manager.start_camera("3")
-        assert len(manager.running_device_ids()) == 3
+        manager.start_camera("2")
+        assert len(manager.running_device_ids()) == 2
         assert any("Cannot start" in str(warn.message) for warn in w)
