@@ -321,7 +321,7 @@ class MainWindow(QMainWindow):
     def closeEvent(self, event: QCloseEvent) -> None:
         """ウィンドウを閉じる際にすべてのストリームを停止する。"""
         for preview in list(self._preview_windows.values()):
-            preview.close()
+            preview.force_close()
         self._preview_windows.clear()
         self._camera_stream_manager.shutdown()
         super().closeEvent(event)

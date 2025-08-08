@@ -131,6 +131,8 @@ class CameraPreviewWindow(QDialog):
         self._pose_worker: PoseEstimationWorker | None = None
         self._last_landmarks: list | None = None
         self._inference_busy = False
+        # MainWindow からの強制閉鎖時に推定状態を無視するフラグ
+        self._force_close = False
 
         # --- キャリブ関連
         self.calibrator = CameraCalibrator()
@@ -462,12 +464,18 @@ class CameraPreviewWindow(QDialog):
         self._pose_estimation_enabled = enabled
 
 
+    def force_close(self) -> None:
+        """MainWindow からの終了時に強制的に閉じるためのヘルパー"""
+        self._force_close = True
+        self.close()
+
+
     def closeEvent(self, event: QCloseEvent) -> None:
         """ウィンドウを閉じる際にストリームを停止し後片付けを行う。"""
         if self.calibrating:
             self._stop_calibration(cancel=True)
-        # 推定中は閉じられない
-        if self._pose_estimation_enabled:
+        # 推定中は閉じられない（ただし MainWindow からの強制閉鎖は除く）
+        if self._pose_estimation_enabled and not self._force_close:
             QMessageBox.warning(
                 self, "カメラを停止できません",
                 "このカメラは姿勢推定を実行中です。\n"
@@ -476,6 +484,7 @@ class CameraPreviewWindow(QDialog):
             event.ignore()
             return
         self.set_pose_estimation_enabled(False)
+        self._force_close = False
         self.camera_stream_manager.q_image_ready.disconnect(self._on_image_ready_slot)
         self.camera_stream_manager.frame_ready.disconnect(self._on_frame_ready)
         self.camera_stream_manager.stop_camera(self.device_id)
