@@ -264,7 +264,7 @@ class MainWindow(QMainWindow):
         if len(targets) < 2:
             return
 
-        # ---------------- カウントダウン用ポップアップ ---------------- #
+        # --- カウントダウン用ポップアップ
         popup = QDialog(self)
         popup.setWindowTitle("Stereo Calibration")
         vbox = QVBoxLayout(popup)

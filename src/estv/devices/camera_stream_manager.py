@@ -26,7 +26,7 @@ class CameraStreamManager(QObject):
         device_index_lookup: Callable[[str], int | None],
         auto_restart: bool = False,
         restart_delay_ms: int = 2000,
-        max_streams: int = 3,
+        max_streams: int = 2,
     ) -> None:
         """マネージャーを生成する。
 
