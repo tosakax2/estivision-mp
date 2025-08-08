@@ -109,6 +109,7 @@ class CameraPreviewWindow(QDialog):
         self,
         camera_stream_manager: CameraStreamManager,
         device_id: str = "",
+        device_name: str | None = None,
         parent: QWidget | None = None,
         on_closed: Callable[[str], None] | None = None,
     ) -> None:
@@ -126,8 +127,9 @@ class CameraPreviewWindow(QDialog):
             ウィンドウ閉鎖時に ``device_id`` を引数に呼び出されるコールバック。
         """
         super().__init__(parent)
-        self.setWindowTitle("ESTV - Camera Preview")
         self.device_id = device_id
+        self.device_name = device_name or device_id
+        self.setWindowTitle(f"ESTV - {self.device_name}")
         self.camera_stream_manager = camera_stream_manager
         self._on_closed = on_closed
         self._pose_estimation_enabled = False
