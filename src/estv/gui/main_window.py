@@ -283,7 +283,7 @@ class MainWindow(QMainWindow):
                 try:
                     self._stereo_params = StereoParams.load(path)
                     self.stereo_status_label.setText(
-                        f"RMS: {self._stereo_params.rms:.3f}"
+                        f"再投影誤差: {self._stereo_params.rms:.3f}"
                     )
                 except Exception:  # pylint: disable=broad-except
                     self._stereo_params = None
@@ -387,7 +387,7 @@ class MainWindow(QMainWindow):
             QMessageBox.information(
                 self,
                 "ステレオキャリブレーション完了",
-                f"推定終了: RMS 誤差 = {params.rms:.3f}",
+                f"再投影誤差: {params.rms:.3f}",
             )
         except Exception as exc:  # pylint: disable=broad-except
             QMessageBox.critical(

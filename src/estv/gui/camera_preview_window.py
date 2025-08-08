@@ -382,9 +382,9 @@ class CameraPreviewWindow(QDialog):
                 err = self.calibrator.reprojection_error
                 self.status_label.setStyleSheet(f"color: {TEXT_COLOR};")
                 if err is not None:
-                    self.status_label.setText(f"平均再投影誤差: {err:.3f}")
+                    self.status_label.setText(f"再投影誤差: {err:.3f}")
                 else:
-                    self.status_label.setText("平均再投影誤差: 計算不可")
+                    self.status_label.setText("再投影誤差: 計算不可")
 
                 # --- プロジェクトルート直下のdata/に保存
                 calib_path = _calib_file_path(self.device_id)
