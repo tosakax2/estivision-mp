@@ -1,5 +1,10 @@
 # estv/gui/main_window.py
 
+import re
+from pathlib import Path
+
+import cv2
+import numpy as np
 from PySide6.QtCore import (
     Qt,
     QTimer,
@@ -24,11 +29,25 @@ from PySide6.QtWidgets import (
 
 from estv.devices.camera_stream_manager import CameraStreamManager
 from estv.devices.media_device_manager import MediaDeviceManager
-from estv.gui.camera_preview_window import CameraPreviewWindow
+from estv.devices.stereo_calibrator import StereoParams, stereo_calibrate
+from estv.gui.camera_preview_window import (
+    CameraPreviewWindow,
+    _calib_file_path,
+    _get_data_dir,
+)
 from estv.gui.style_constants import (
     SUCCESS_COLOR,
-    WARNING_COLOR
+    WARNING_COLOR,
 )
+
+
+def _stereo_file_path(cam1_id: str, cam2_id: str) -> str:
+    """IDペアから外部キャリブファイルパスを生成する。"""
+    safe1 = re.sub(r"[^A-Za-z0-9._-]", "_", cam1_id)
+    safe2 = re.sub(r"[^A-Za-z0-9._-]", "_", cam2_id)
+    if safe1 > safe2:
+        safe1, safe2 = safe2, safe1
+    return str(_get_data_dir() / f"stereo_{safe1}_{safe2}.npz")
 
 
 class MainWindow(QMainWindow):
@@ -49,6 +68,7 @@ class MainWindow(QMainWindow):
 
         self._camera_device_infos: list[dict[str, str]] = []
         self._preview_windows: dict[str, CameraPreviewWindow] = {}
+        self._stereo_params: StereoParams | None = None
 
         self._estimation_active: bool = False
 
@@ -98,8 +118,10 @@ class MainWindow(QMainWindow):
         # --- Calibrationグループボックス
         calibration_group = QGroupBox("Calibration")
         calibration_layout = QVBoxLayout()
+        self.stereo_status_label = QLabel("未キャリブレーション")
         self.stereo_calib_button = QPushButton("ステレオキャリブレーション開始")
         self.stereo_calib_button.setEnabled(False)
+        calibration_layout.addWidget(self.stereo_status_label)
         calibration_layout.addWidget(self.stereo_calib_button)
         calibration_group.setLayout(calibration_layout)
         self.stereo_calib_button.clicked.connect(self._start_stereo_calibration)
@@ -254,6 +276,24 @@ class MainWindow(QMainWindow):
             if p.calibration_done and p.latest_frame is not None
         ]
         self.stereo_calib_button.setEnabled(len(ready) >= 2)
+        if len(ready) >= 2:
+            cam1, cam2 = ready[:2]
+            path = Path(_stereo_file_path(cam1.device_id, cam2.device_id))
+            if path.exists():
+                try:
+                    self._stereo_params = StereoParams.load(path)
+                    self.stereo_status_label.setText(
+                        f"RMS: {self._stereo_params.rms:.3f}"
+                    )
+                except Exception:  # pylint: disable=broad-except
+                    self._stereo_params = None
+                    self.stereo_status_label.setText("未キャリブレーション")
+            else:
+                self._stereo_params = None
+                self.stereo_status_label.setText("未キャリブレーション")
+        else:
+            self._stereo_params = None
+            self.stereo_status_label.setText("未キャリブレーション")
 
     def _start_stereo_calibration(self) -> None:
         """5 秒カウント後に 2 台同時撮影し外部パラメータを推定."""
@@ -298,20 +338,55 @@ class MainWindow(QMainWindow):
             QMessageBox.warning(self, "撮影失敗", "画像を取得できませんでした。")
             return
 
-        from pathlib import Path
-        from estv.devices.stereo_calibrator import StereoCalibrator
-        from estv.gui.camera_preview_window import _calib_file_path  # reuse helper
-
         calib_path1 = Path(_calib_file_path(cam1.device_id))
         calib_path2 = Path(_calib_file_path(cam2.device_id))
+        stereo_path = Path(_stereo_file_path(cam1.device_id, cam2.device_id))
 
         try:
-            stereo = StereoCalibrator(calib_path1, calib_path2)
-            rms = stereo.calibrate(img1, img2)
+            data1 = np.load(str(calib_path1))
+            data2 = np.load(str(calib_path2))
+            k1, d1 = data1["camera_matrix"], data1["dist_coeffs"]
+            k2, d2 = data2["camera_matrix"], data2["dist_coeffs"]
+
+            board_size = (6, 9)
+            square_size_m = 0.02
+
+            gray1 = cv2.cvtColor(img1, cv2.COLOR_BGR2GRAY)
+            gray2 = cv2.cvtColor(img2, cv2.COLOR_BGR2GRAY)
+            found1, corners1 = cv2.findChessboardCorners(gray1, board_size, None)
+            found2, corners2 = cv2.findChessboardCorners(gray2, board_size, None)
+            if not (found1 and found2):
+                raise ValueError("チェスボードが検出できませんでした。")
+
+            criteria = (
+                cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER,
+                30,
+                0.001,
+            )
+            corners1 = cv2.cornerSubPix(gray1, corners1, (11, 11), (-1, -1), criteria)
+            corners2 = cv2.cornerSubPix(gray2, corners2, (11, 11), (-1, -1), criteria)
+
+            image_size = (img1.shape[1], img1.shape[0])
+
+            params = stereo_calibrate(
+                [corners1],
+                [corners2],
+                board_size,
+                square_size_m,
+                k1,
+                d1,
+                k2,
+                d2,
+                image_size,
+                cam1.device_id,
+                cam2.device_id,
+            )
+            params.save(stereo_path)
+            self._stereo_params = params
             QMessageBox.information(
                 self,
                 "ステレオキャリブレーション完了",
-                f"推定終了: RMS 誤差 = {rms:.3f}",
+                f"推定終了: RMS 誤差 = {params.rms:.3f}",
             )
         except Exception as exc:  # pylint: disable=broad-except
             QMessageBox.critical(
