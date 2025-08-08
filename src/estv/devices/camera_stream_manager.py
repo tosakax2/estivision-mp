@@ -26,6 +26,7 @@ class CameraStreamManager(QObject):
         device_index_lookup: Callable[[str], int | None],
         auto_restart: bool = False,
         restart_delay_ms: int = 2000,
+        max_streams: int = 3,
     ) -> None:
         """マネージャーを生成する。
 
@@ -50,6 +51,9 @@ class CameraStreamManager(QObject):
         self._auto_restart: bool = auto_restart
         self._restart_delay_ms: int = restart_delay_ms
 
+        # --- 同時起動できる最大カメラ数
+        self._max_streams: int = max_streams
+
         # --- 再起動待ちデバイス
         self._pending_restart: set[str] = set()
 
@@ -66,6 +70,13 @@ class CameraStreamManager(QObject):
         with self._lock:
             if camera_id in self._streams:
                 warnings.warn(f"Camera {camera_id} stream already running")
+                self.streams_updated.emit()
+                return
+            if len(self._streams) >= self._max_streams:
+                warnings.warn(
+                    f"Cannot start more than {self._max_streams} cameras simultaneously"
+                )
+                self.streams_updated.emit()
                 return
             stream = CameraStream(device_index)
             stream.frame_ready.connect(lambda frame, c=camera_id: self.frame_ready.emit(c, frame))
@@ -75,6 +86,11 @@ class CameraStreamManager(QObject):
             self._streams[camera_id] = stream
             stream.start()
         self.streams_updated.emit()
+
+    @property
+    def max_streams(self) -> int:
+        """同時に起動可能な最大カメラ数を返す。"""
+        return self._max_streams
 
 
     def stop_camera(self, camera_id: str) -> None:

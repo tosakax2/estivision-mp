@@ -223,13 +223,19 @@ class MainWindow(QMainWindow):
     def _update_start_buttons_state(self) -> None:
         """行ごとの '起動／停止' ボタンの有効・無効を更新する。"""
         rows = self.camera_table.rowCount()
+        running_count = len(self._camera_stream_manager.running_device_ids())
+        max_streams = self._camera_stream_manager.max_streams
         for row in range(rows):
             btn = self.camera_table.cellWidget(row, 3)
             if btn is None:
                 continue
             running = btn.isChecked()
-            # 推定中 (_launch_enabled=False) はすべて無効化
-            btn.setEnabled(self._launch_enabled)
+            if not self._launch_enabled:
+                btn.setEnabled(False)
+            elif not running and running_count >= max_streams:
+                btn.setEnabled(False)
+            else:
+                btn.setEnabled(True)
 
 
     def _on_preview_closed(self, device_id: str) -> None:
