@@ -32,6 +32,11 @@ class MediaDeviceManager(QObject):
         # --- カメラデバイスのリストをキャッシュ
         self._camera_devices: list[QCameraDevice] = self._media_devices.videoInputs()
 
+        # --- デバイス更新を遅延実行するタイマー
+        self._update_timer = QTimer(self)
+        self._update_timer.setSingleShot(True)
+        self._update_timer.timeout.connect(self._update_camera_devices)
+
         # --- シグナルを初回発行
         # シグナル接続後に必ず届くよう、0ms 後に呼び出しをスケジュール
         QTimer.singleShot(0, self._notify_camera_devices_update)
@@ -39,10 +44,16 @@ class MediaDeviceManager(QObject):
 
     def _on_camera_devices_changed(self) -> None:
         """``QMediaDevices`` からのカメラデバイス更新に対応する。"""
-        # --- 最新のカメラデバイス一覧を再取得
-        self._camera_devices: list[QCameraDevice] = self._media_devices.videoInputs()
+        # --- 最新一覧の取得はタイマーで遅延実行
+        # 直接 ``videoInputs()`` を呼び出すとデバイス抜き差し時に
+        # GUI が一時停止することがあったため、イベントループに制御を
+        # 戻してから更新処理を行う。
+        self._update_timer.start(0)
 
-        # --- カメラデバイス名一覧を通知
+
+    def _update_camera_devices(self) -> None:
+        """カメラデバイス一覧を更新して通知する。"""
+        self._camera_devices = self._media_devices.videoInputs()
         self._notify_camera_devices_update()
 
 
