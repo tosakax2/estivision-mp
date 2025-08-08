@@ -466,6 +466,8 @@ class CameraPreviewWindow(QDialog):
                 self._last_landmarks = None
                 self._inference_busy = False
         self._pose_estimation_enabled = enabled
+        # 姿勢推定中は内部キャリブボタンを無効化
+        self.calib_button.setEnabled(not enabled)
 
 
     def force_close(self) -> None:
