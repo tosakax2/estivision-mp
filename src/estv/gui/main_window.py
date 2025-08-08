@@ -121,6 +121,8 @@ class MainWindow(QMainWindow):
         self.stereo_status_label = QLabel("未キャリブレーション")
         self.stereo_calib_button = QPushButton("ステレオキャリブレーション開始")
         self.stereo_calib_button.setEnabled(False)
+        self.stereo_calib_button.setStyleSheet("padding: 6px 18px;")
+        self.stereo_calib_button.setFixedWidth(480)
         calibration_layout.addWidget(self.stereo_status_label)
         calibration_layout.addWidget(self.stereo_calib_button)
         calibration_group.setLayout(calibration_layout)
@@ -132,6 +134,8 @@ class MainWindow(QMainWindow):
         self.global_est_button = QPushButton("姿勢推定開始")
         self.global_est_button.setCheckable(True)
         self.global_est_button.setEnabled(False)
+        self.global_est_button.setStyleSheet("padding: 6px 18px;")
+        self.global_est_button.setFixedWidth(480)
         self.global_est_button.clicked.connect(self._toggle_global_estimation)
         self._launch_enabled = True
         estimation_layout.addWidget(self.global_est_button)
@@ -206,8 +210,20 @@ class MainWindow(QMainWindow):
             self._camera_stream_manager.start_camera(device_id)
             # --- プレビューウィンドウを開く
             if device_id not in self._preview_windows:
+                device_name = next(
+                    (
+                        info.get("name", device_id)
+                        for info in self._camera_device_infos
+                        if info.get("id") == device_id
+                    ),
+                    device_id,
+                )
                 preview = CameraPreviewWindow(
-                    self._camera_stream_manager, device_id=device_id, parent=self, on_closed=self._on_preview_closed
+                    self._camera_stream_manager,
+                    device_id=device_id,
+                    device_name=device_name,
+                    parent=self,
+                    on_closed=self._on_preview_closed,
                 )
                 preview.show()
                 self._preview_windows[device_id] = preview
