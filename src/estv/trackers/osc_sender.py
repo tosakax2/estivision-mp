@@ -1,7 +1,7 @@
 from pythonosc.udp_client import SimpleUDPClient
 
 
-# Unityの座標系と同じ、左利き座標系、+y
+# Unityの座標系と同じ、左利き座標系、+yが上
 # 位置(x, y, z)は 1.0f = 1m
 # 回転(z, y, x)はクォータニオン、単位は度(degree)、回転値はワールド座標系
 # VRChatでサポートされている部位は、腰・胸・肘×2・膝×2・足×2の8か所
